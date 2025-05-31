@@ -2,9 +2,9 @@ name: Publish to npm
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
-
+    branches: [ main ]
+    tags: ['v*.*.*']
+    
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
