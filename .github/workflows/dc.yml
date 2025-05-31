@@ -1,0 +1,33 @@
+name: Build & Publish to GitHub Container Registry
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # Jalankan saat ada tag semver
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/4211421036/pqcrypto:${{ github.ref_name }}
+            ghcr.io/4211421036/pqcrypto:latest
