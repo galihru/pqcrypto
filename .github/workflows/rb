@@ -20,7 +20,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.1
-      
+
       - name: Build gem
         run: gem build laicrypto.gemspec
 
@@ -29,4 +29,4 @@ jobs:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           VERSION=$(grep -Po '(?<=VERSION = ")[^"]*' lib/laicrypto/version.rb)
-          gem push "laicrypto-${VERSION}.gem"
+          gem push "laicrypto-${VERSION}.gem" --api-key $RUBYGEMS_API_KEY
