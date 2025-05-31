@@ -22,5 +22,4 @@ __all__ = [
     "decrypt",
 ]
 
-# Versi paket, sinkronkan dengan pyproject.toml:
-__version__ = "0.1.4"
+__version__ = "0.1.5"
