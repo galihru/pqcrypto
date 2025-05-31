@@ -29,7 +29,7 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
     if a == 0:
         return 0
 
-    # Cek Legendre symbol
+    # Legendre symbol: a^((p-1)//2) mod p
     ls = pow(a, (p - 1) // 2, p)
     if ls == p - 1:
         # Non-residu → tidak ada akar kuadrat
@@ -52,7 +52,7 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
     while pow(z, (p - 1) // 2, p) != p - 1:
         z += 1
 
-    # Inisiasi
+    # Inisiasi variabel
     m = s
     c = pow(z, q, p)
     t = pow(a, q, p)
@@ -62,7 +62,7 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
     while True:
         if t % p == 1:
             return r
-        # Cari i terkecil sehingga t^(2^i) ≡ 1 (mod p)
+        # Cari i terkecil: t^(2^i) ≡ 1 (mod p)
         t2i = t
         i = 0
         for i2 in range(1, m):
@@ -86,6 +86,7 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
       y' = sqrt_mod(x*y + H(x,y,s), p)
 
     Jika sqrt_mod gagal (None), naikkan s (fallback) hingga 10 kali.
+    Lemniscate‐AGM Isogeny step.
     """
     x, y = point
     inv2 = pow(2, p - 2, p)  # invers dari 2 mod p
@@ -93,6 +94,7 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
     trials = 0
     s_current = s
 
+    # Coba hingga 10 kali dengan seed index yang meningkat
     while trials < 10:
         h = H(x, y, s_current, p)
         x_candidate = ((x + a + h) * inv2) % p
@@ -101,7 +103,7 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
         if y_candidate is not None:
             return x_candidate, y_candidate
 
-        # Fallback: jika tidak ada akar, naikkan s dan coba lagi
+        # Jika gagal, naikkan seed dan ulangi
         s_current += 1
         trials += 1
 
@@ -112,11 +114,11 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
 
 def _pow_T_sequential(P: Tuple[int, int], exp: int, a: int, p: int) -> Tuple[int, int]:
     """
-    Terapkan T sebanyak 'exp' kali secara berurutan, 
+    Terapkan T sebanyak 'exp' kali secara berurutan,
     dengan seed index mulai 1,2,...,exp:
       T^exp(P) = T(T(...T(P,1)..., exp-1), exp).
 
-    Ini O(exp), tetapi sesuai dengan definisi matematis LAI.
+    Kompleksitas O(exp), sesuai definisi matematis LAI.
     """
     result = P
     for i in range(1, exp + 1):
@@ -127,12 +129,19 @@ def _pow_T_sequential(P: Tuple[int, int], exp: int, a: int, p: int) -> Tuple[int
 def keygen(p: int, a: int, P0: Tuple[int, int]) -> Tuple[int, Tuple[int, int]]:
     """
     Generasi kunci:
-      - Pilih k random di [1, p-1]
-      - Hitung Q = T^k(P0) (aplikasi berurutan)
+      1. Pilih k random di [1, p-1].
+      2. Hitung Q = T^k(P0) (aplikasi berurutan).
+      3. Jika gagal (ValueError), ulangi dengan k baru.
+      Return (k, Q).
     """
-    k = secrets.randbelow(p - 1) + 1
-    Q = _pow_T_sequential(P0, k, a, p)
-    return k, Q
+    while True:
+        k = secrets.randbelow(p - 1) + 1
+        try:
+            Q = _pow_T_sequential(P0, k, a, p)
+            return k, Q
+        except ValueError:
+            # T^k(P0) gagal → pilih k baru
+            continue
 
 
 def encrypt(
@@ -144,18 +153,35 @@ def encrypt(
 ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """
     Enkripsi:
-      - Pilih r random di [1, p-1]
-      - C1 = T^r(P0)
-      - Sr = T^r(Q)
-      - M = (m mod p, 0)
-      - C2 = M + Sr  (penjumlahan komponen)
+      1. Pilih r random di [1, p-1].
+      2. C1 = T^r(P0).
+         Jika T^r(P0) gagal, ulangi dengan r baru.
+      3. Sr = T^r(public_Q).
+         Jika T^r(public_Q) gagal, ulangi dengan r baru.
+      4. M = (m mod p, 0).
+      5. C2 = M + Sr  (penjumlahan komponen).
+      Return (C1, C2).
     """
-    r = secrets.randbelow(p - 1) + 1
-    C1 = _pow_T_sequential(P0, r, a, p)          # T^r(P0)
-    Sr = _pow_T_sequential(public_Q, r, a, p)    # T^r(Q)
-    M = (m % p, 0)
-    C2 = ((M[0] + Sr[0]) % p, (M[1] + Sr[1]) % p)
-    return C1, C2
+    while True:
+        r = secrets.randbelow(p - 1) + 1
+
+        # Hitung C1 = T^r(P0)
+        try:
+            C1 = _pow_T_sequential(P0, r, a, p)
+        except ValueError:
+            # Gagal, coba r baru
+            continue
+
+        # Hitung Sr = T^r(public_Q)
+        try:
+            Sr = _pow_T_sequential(public_Q, r, a, p)
+        except ValueError:
+            # Gagal, coba r baru
+            continue
+
+        M = (m % p, 0)
+        C2 = ((M[0] + Sr[0]) % p, (M[1] + Sr[1]) % p)
+        return C1, C2
 
 
 def decrypt(
@@ -167,10 +193,11 @@ def decrypt(
 ) -> int:
     """
     Dekripsi:
-      - S = T^k(C1)
-      - M = (C2.x - S.x) mod p
-      - Kembalikan komponen pertama M
+      S = T^k(C1)
+      M = (C2.x - S.x) mod p
+      Return komponen pertama M.
+      Jika T^k(C1) gagal, melempar ValueError.
     """
-    S = _pow_T_sequential(C1, k, a, p)  # T^k(C1)
+    S = _pow_T_sequential(C1, k, a, p)  # Bisa melempar ValueError
     M0 = (C2[0] - S[0]) % p
     return M0
