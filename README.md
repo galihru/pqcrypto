@@ -1,5 +1,7 @@
 # pqcrypto
 
+<img src="logo.png" />
+
 **Post-Quantum Lemniscate-AGM Isogeny (LAI) Encryption**
 
 A Python package providing a reference implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme. LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.
