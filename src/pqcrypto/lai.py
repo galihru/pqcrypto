@@ -1,6 +1,8 @@
 """
+lai.py
+
 Lemniscate-AGM Isogeny (LAI) Encryption.
-Quantum-Resistant Cryptography via Lemniscate Lattices and AGM Transformations
+Quantum-Resistant Cryptography via Lemniscate Lattices and AGM Transformations.
 """
 
 import hashlib
@@ -23,23 +25,22 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
     Hitung akar kuadrat modulo p (p prime) menggunakan Tonelli–Shanks.
     Jika 'a' bukan kuadrat residu mod p, kembalikan None.
     """
-    # Kasus sederhana: jika a ≡ 0 mod p → akar = 0
     a = a % p
     if a == 0:
         return 0
 
-    # Legendre symbol: a^((p-1)/2) mod p
+    # Cek Legendre symbol
     ls = pow(a, (p - 1) // 2, p)
     if ls == p - 1:
-        # a adalah non-residu kuadrat modulo p
+        # Non-residu → tidak ada akar kuadrat
         return None
 
-    # Jika p ≡ 3 (mod 4), gunakan rumus langsung
+    # Kasus cepat jika p ≡ 3 (mod 4)
     if p % 4 == 3:
         return pow(a, (p + 1) // 4, p)
 
     # Tonelli–Shanks untuk p ≡ 1 (mod 4)
-    # Tulis p-1 = q * 2^s dengan q ganjil
+    # Tulis p-1 = q * 2^s, dengan q ganjil
     q = p - 1
     s = 0
     while q % 2 == 0:
@@ -51,7 +52,7 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
     while pow(z, (p - 1) // 2, p) != p - 1:
         z += 1
 
-    # Inisiasi variabel
+    # Inisiasi
     m = s
     c = pow(z, q, p)
     t = pow(a, q, p)
@@ -61,7 +62,7 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
     while True:
         if t % p == 1:
             return r
-        # Cari i terkecil: t^(2^i) ≡ 1 mod p
+        # Cari i terkecil sehingga t^(2^i) ≡ 1 (mod p)
         t2i = t
         i = 0
         for i2 in range(1, m):
@@ -81,15 +82,17 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
 def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
     """
     Transformasi T(x, y; s):
-      x' = (x + a + H(x,y,s)) * inv2 mod p
+      x' = (x + a + H(x,y,s)) * inv2  mod p
       y' = sqrt_mod(x*y + H(x,y,s), p)
-    Jika sqrt_mod gagal (None), ditangani dengan menaikkan s (fallback).
+
+    Jika sqrt_mod gagal (None), naikkan s (fallback) hingga 10 kali.
     """
     x, y = point
     inv2 = pow(2, p - 2, p)  # invers dari 2 mod p
 
     trials = 0
     s_current = s
+
     while trials < 10:
         h = H(x, y, s_current, p)
         x_candidate = ((x + a + h) * inv2) % p
@@ -98,7 +101,7 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
         if y_candidate is not None:
             return x_candidate, y_candidate
 
-        # Fallback: naikkan s dan coba lagi
+        # Fallback: jika tidak ada akar, naikkan s dan coba lagi
         s_current += 1
         trials += 1
 
@@ -107,21 +110,17 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
     )
 
 
-def _pow_T(P: Tuple[int, int], exp: int, a: int, p: int) -> Tuple[int, int]:
+def _pow_T_sequential(P: Tuple[int, int], exp: int, a: int, p: int) -> Tuple[int, int]:
     """
-    Binary exponentiation wrapper untuk T.
-    Menghitung T^exp(P) secara efisien.
+    Terapkan T sebanyak 'exp' kali secara berurutan, 
+    dengan seed index mulai 1,2,...,exp:
+      T^exp(P) = T(T(...T(P,1)..., exp-1), exp).
+
+    Ini O(exp), tetapi sesuai dengan definisi matematis LAI.
     """
     result = P
-    base = P
-    e = exp
-    s = 1
-    while e > 0:
-        if e & 1:
-            result = T(result, s, a, p)
-        base = T(base, s, a, p)
-        e >>= 1
-        s += 1
+    for i in range(1, exp + 1):
+        result = T(result, i, a, p)
     return result
 
 
@@ -129,10 +128,10 @@ def keygen(p: int, a: int, P0: Tuple[int, int]) -> Tuple[int, Tuple[int, int]]:
     """
     Generasi kunci:
       - Pilih k random di [1, p-1]
-      - Hitung Q = T^k(P0) via binary exponentiation
+      - Hitung Q = T^k(P0) (aplikasi berurutan)
     """
     k = secrets.randbelow(p - 1) + 1
-    Q = _pow_T(P0, k, a, p)
+    Q = _pow_T_sequential(P0, k, a, p)
     return k, Q
 
 
@@ -145,15 +144,15 @@ def encrypt(
 ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """
     Enkripsi:
-      r random
-      C1 = T^r(P0)
-      Sr = T^r(Q)
-      M = (m mod p, 0)
-      C2 = M + Sr
+      - Pilih r random di [1, p-1]
+      - C1 = T^r(P0)
+      - Sr = T^r(Q)
+      - M = (m mod p, 0)
+      - C2 = M + Sr  (penjumlahan komponen)
     """
     r = secrets.randbelow(p - 1) + 1
-    C1 = _pow_T(P0, r, a, p)
-    Sr = _pow_T(public_Q, r, a, p)
+    C1 = _pow_T_sequential(P0, r, a, p)          # T^r(P0)
+    Sr = _pow_T_sequential(public_Q, r, a, p)    # T^r(Q)
     M = (m % p, 0)
     C2 = ((M[0] + Sr[0]) % p, (M[1] + Sr[1]) % p)
     return C1, C2
@@ -168,9 +167,10 @@ def decrypt(
 ) -> int:
     """
     Dekripsi:
-      S = T^k(C1)
-      M = (C2.x - S.x) mod p (ambil komponen pertama)
+      - S = T^k(C1)
+      - M = (C2.x - S.x) mod p
+      - Kembalikan komponen pertama M
     """
-    S = _pow_T(C1, k, a, p)
+    S = _pow_T_sequential(C1, k, a, p)  # T^k(C1)
     M0 = (C2[0] - S[0]) % p
     return M0
