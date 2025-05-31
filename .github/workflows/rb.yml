@@ -22,11 +22,11 @@ jobs:
           ruby-version: 3.1
       
       - name: Build gem
-        run: gem build pqcrypto.gemspec
+        run: gem build laicrypto.gemspec
 
       - name: Push gem to RubyGems
         env:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
-          VERSION=$(grep -Po '(?<=VERSION = ")[^"]*' lib/lai/version.rb)
-          gem push "pqcrypto-${VERSION}.gem"
+          VERSION=$(grep -Po '(?<=VERSION = ")[^"]*' lib/laicrypto/version.rb)
+          gem push "laicrypto-${VERSION}.gem"
