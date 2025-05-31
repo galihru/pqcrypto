@@ -128,6 +128,11 @@ function decrypt(C1, C2, k, a, p):
 pip install pqcrypto
 ```
 
+### From NPM
+```bash
+npm install laicrypto
+```
+
 ### From Source
 
 ```bash
@@ -140,6 +145,7 @@ pip install .
 
 ## Usage Example
 
+Python
 ```python
 import math
 
@@ -259,6 +265,27 @@ hello("LAI User");
     assert recovered_text == original_text, "Decryption mismatch!"
     print("Round-trip successful! Teks tepat sama dengan semula.")
 
+```
+
+JS
+```js
+const {
+  keygen,
+  encrypt,
+  decrypt
+} = require('laicrypto');
+
+const p = 23n;
+const a = 5n;
+const P0 = [3n, 10n];
+
+const { k, Q } = keygen(p, a, P0);
+
+const m = 7n;
+const { C1, C2, r } = encrypt(m, Q, k, p, a, P0);
+
+const decrypted = decrypt(C1, C2, k, r, a, p);
+console.log('Pesan asli:', decrypted.toString());
 ```
 
 ---
