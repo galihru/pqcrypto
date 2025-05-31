@@ -25,11 +25,20 @@ jobs:
         node-version: '18'
         registry-url: 'https://npm.pkg.github.com'
         scope: '@galihridhoutomo'
+        # Tambahkan ini:
+        always-auth: true
   
     - name: Install dependencies
-      run: npm install
+      run: |
+        npm install
+        npm pkg fix
+        
+    - name: Create .npmrc file
+      run: |
+        echo "@galihridhoutomo:registry=https://npm.pkg.github.com" >> .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
   
     - name: Publish to GitHub Packages
-      run: npm publish
+      run: npm publish --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
