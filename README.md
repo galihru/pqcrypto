@@ -1,6 +1,6 @@
 # pqcrypto
 
-<img src="logo.png" />
+<img src="https://github.com/4211421036/pqcrypto/logo.png" />
 
 **Post-Quantum Lemniscate-AGM Isogeny (LAI) Encryption**
 
@@ -131,7 +131,7 @@ pip install pqcrypto
 ### From Source
 
 ```bash
-git clone https://github.com/username/pqcrypto.git
+git clone https://github.com/4211421036/pqcrypto.git
 cd pqcrypto
 pip install .
 ```
