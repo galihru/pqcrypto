@@ -15,6 +15,9 @@
   ],
   "author": "GALIH RIDHO UTOMO <g4lihru@students.unnes.ac.id>",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/4211421036/pqcrypto.git"
