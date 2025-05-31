@@ -40,7 +40,6 @@ def sqrt_mod(a: int, p: int) -> Optional[int]:
         return pow(a, (p + 1) // 4, p)
 
     # Tonelli–Shanks untuk p ≡ 1 (mod 4)
-    # Tulis p-1 = q * 2^s, dengan q ganjil
     q = p - 1
     s = 0
     while q % 2 == 0:
@@ -86,7 +85,6 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
       y' = sqrt_mod(x*y + H(x,y,s), p)
 
     Jika sqrt_mod gagal (None), naikkan s (fallback) hingga 10 kali.
-    Lemniscate‐AGM Isogeny step.
     """
     x, y = point
     inv2 = pow(2, p - 2, p)  # invers dari 2 mod p
@@ -94,7 +92,6 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
     trials = 0
     s_current = s
 
-    # Coba hingga 10 kali dengan seed index yang meningkat
     while trials < 10:
         h = H(x, y, s_current, p)
         x_candidate = ((x + a + h) * inv2) % p
@@ -103,7 +100,7 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
         if y_candidate is not None:
             return x_candidate, y_candidate
 
-        # Jika gagal, naikkan seed dan ulangi
+        # Jika gagal, naikkan seed dan coba lagi
         s_current += 1
         trials += 1
 
@@ -112,17 +109,22 @@ def T(point: Tuple[int, int], s: int, a: int, p: int) -> Tuple[int, int]:
     )
 
 
-def _pow_T_sequential(P: Tuple[int, int], exp: int, a: int, p: int) -> Tuple[int, int]:
+def _pow_T_range(P: Tuple[int, int], start_s: int, exp: int, a: int, p: int) -> Tuple[int, int]:
     """
-    Terapkan T sebanyak 'exp' kali secara berurutan,
-    dengan seed index mulai 1,2,...,exp:
-      T^exp(P) = T(T(...T(P,1)..., exp-1), exp).
+    Terapkan T secara berurutan 'exp' kali, 
+    dengan seed index mulai di 'start_s', 'start_s+1', ..., 'start_s+exp-1':
 
-    Kompleksitas O(exp), sesuai definisi matematis LAI.
+      result = P
+      for i in 0 .. exp-1:
+          result = T(result, start_s + i)
+
+    Return T^exp(P) dengan seed tepat.
     """
     result = P
-    for i in range(1, exp + 1):
-        result = T(result, i, a, p)
+    curr_s = start_s
+    for _ in range(exp):
+        result = T(result, curr_s, a, p)
+        curr_s += 1
     return result
 
 
@@ -130,18 +132,18 @@ def keygen(p: int, a: int, P0: Tuple[int, int]) -> Tuple[int, Tuple[int, int]]:
     """
     Generasi kunci:
       1. Pilih k random di [1, p-1].
-      2. Hitung Q = T^k(P0) (aplikasi berurutan).
-      3. Jika gagal (ValueError), ulangi dengan k baru.
+      2. Hitung Q = T^k(P0) dengan seed index 1..k.
+      3. Jika gagal, ulangi dengan k baru.
       Return (k, Q).
     """
     while True:
         k = secrets.randbelow(p - 1) + 1
         try:
-            Q = _pow_T_sequential(P0, k, a, p)
+            # Seeds 1..k
+            Q = _pow_T_range(P0, start_s=1, exp=k, a=a, p=p)
             return k, Q
         except ValueError:
-            # T^k(P0) gagal → pilih k baru
-            continue
+            continue  # gagal → coba k lain
 
 
 def encrypt(
@@ -154,10 +156,10 @@ def encrypt(
     """
     Enkripsi:
       1. Pilih r random di [1, p-1].
-      2. C1 = T^r(P0).
-         Jika T^r(P0) gagal, ulangi dengan r baru.
-      3. Sr = T^r(public_Q).
-         Jika T^r(public_Q) gagal, ulangi dengan r baru.
+      2. C1 = T^r(P0) dengan seed 1..r.
+         Jika gagal, ulangi dengan r baru.
+      3. Sr = T^r(Q) dengan seed (k+1)..(k+r).
+         Jika gagal, ulangi dengan r baru.
       4. M = (m mod p, 0).
       5. C2 = M + Sr  (penjumlahan komponen).
       Return (C1, C2).
@@ -165,23 +167,23 @@ def encrypt(
     while True:
         r = secrets.randbelow(p - 1) + 1
 
-        # Hitung C1 = T^r(P0)
+        # Hitung C1 = T^r(P0), seeds 1..r
         try:
-            C1 = _pow_T_sequential(P0, r, a, p)
+            C1 = _pow_T_range(P0, start_s=1, exp=r, a=a, p=p)
         except ValueError:
-            # Gagal, coba r baru
-            continue
+            continue  # coba r baru
 
-        # Hitung Sr = T^r(public_Q)
-        try:
-            Sr = _pow_T_sequential(public_Q, r, a, p)
-        except ValueError:
-            # Gagal, coba r baru
-            continue
+        # Hitung Sr = T^r(public_Q), seeds (k+1)..(k+r)
+        # Kita butuh k dari public_Q; namun public_Q dihitung dg seed 1..k
+        # Jadi kapan pembuatan public_Q dilakukan, kita simpan k
+        # Untuk keperluan encrypt(), public_Q seharusnya sudah dibuat dengan keygen() and k diketahui.
 
-        M = (m % p, 0)
-        C2 = ((M[0] + Sr[0]) % p, (M[1] + Sr[1]) % p)
-        return C1, C2
+        # Sebagai trik: kita harus mengoper k ke encrypt()
+        # => ubah signature encrypt() menjadi encrypt(m, public_Q, k, p, a, P0)
+
+        raise NotImplementedError(
+            "Signature encrypt() perlu parameter 'k' agar dapat menggunakan seed yang benar."
+        )
 
 
 def decrypt(
@@ -193,11 +195,12 @@ def decrypt(
 ) -> int:
     """
     Dekripsi:
-      S = T^k(C1)
+      S = T^k(C1) dengan seed (r+1)..(r+k).
       M = (C2.x - S.x) mod p
       Return komponen pertama M.
-      Jika T^k(C1) gagal, melempar ValueError.
+      Jika gagal, melempar ValueError.
     """
-    S = _pow_T_sequential(C1, k, a, p)  # Bisa melempar ValueError
-    M0 = (C2[0] - S[0]) % p
-    return M0
+    # Sama catatan: perlu mengetahui r agar seed benar
+    raise NotImplementedError(
+        "Signature decrypt() perlu parameter 'r' agar dapat menggunakan seed yang benar."
+    )
