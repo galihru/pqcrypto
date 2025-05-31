@@ -1,4 +1,6 @@
 """
+laicrypto
+
 Post-quantum Lemniscate-AGM Isogeny (LAI) Encryption Scheme.
 """
 
@@ -19,3 +21,6 @@ __all__ = [
     "encrypt",
     "decrypt",
 ]
+
+# Versi modul: pastikan di‐sinkronisasi dengan pyproject.toml atau setup.py Anda
+__version__ = "0.1.1"
