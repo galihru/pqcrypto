@@ -22,5 +22,5 @@ __all__ = [
     "decrypt",
 ]
 
-# Versi modul: pastikan di‐sinkronisasi dengan pyproject.toml atau setup.py Anda
-__version__ = "0.1.1"
+# Versi paket, sinkronkan dengan pyproject.toml:
+__version__ = "0.1.2"
