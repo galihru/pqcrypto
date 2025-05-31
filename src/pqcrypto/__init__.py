@@ -23,4 +23,4 @@ __all__ = [
 ]
 
 # Versi paket, sinkronkan dengan pyproject.toml:
-__version__ = "0.1.2"
+__version__ = "0.1.4"
