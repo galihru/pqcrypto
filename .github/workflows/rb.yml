@@ -13,28 +13,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout kode sumber dari branch yang ditag
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup environment Ruby
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.1
-          bundler-cache: true
-
-      # Install bundler & dependencies (jika ada Gemfile)
-      - name: Install dependencies
-        run: |
-          gem install bundler
-          bundle install --jobs 4 --retry 3
-
-      # Build file .gem
+      
       - name: Build gem
         run: gem build pqcrypto.gemspec
 
-      # Publish ke RubyGems.org
       - name: Push gem to RubyGems
         env:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
