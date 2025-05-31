@@ -1,8 +1,12 @@
 {
-  "name": "@galihridhoutomo/pqlaicrypto",
+  "name": "pqlaicrypto",
   "version": "0.1.0",
   "description": "A Python package providing a reference implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme. LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.",
   "main": "index.js",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
   "scripts": {
     "test": "echo \"No tests specified\" && exit 0"
   },
@@ -15,10 +19,6 @@
   ],
   "author": "GALIH RIDHO UTOMO <g4lihru@students.unnes.ac.id>",
   "license": "MIT",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "public"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/galihridhoutomo/pqlaicrypto.git"
