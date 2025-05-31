@@ -130,7 +130,7 @@ pip install pqcrypto
 
 ### From NPM
 ```bash
-npm install laicrypto
+npm install pqlaicrypto
 ```
 
 ### From Source
@@ -273,7 +273,7 @@ const {
   keygen,
   encrypt,
   decrypt
-} = require('laicrypto');
+} = require('pqlaicrypto');
 
 const p = 23n;
 const a = 5n;
