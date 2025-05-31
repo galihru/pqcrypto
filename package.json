@@ -1,5 +1,5 @@
 {
-  "name": "laicrypto",                  
+  "name": "pqlaicrypto",                  
   "version": "0.1.0",
   "description": "A Python package providing a reference implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme. LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.", 
   "main": "index.js",                      
