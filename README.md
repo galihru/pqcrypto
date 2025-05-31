@@ -135,8 +135,8 @@ npm install pqlaicrypto
 
 ### From Ruby GEMFILE
 ```bash
-gem build pqcrypto.gemspec
-gem install ./pqcrypto-0.1.0.gem
+gem build laicrypto.gemspec
+gem install ./laicrypto-0.1.0.gem
 ```
 
 ### From Source
@@ -298,8 +298,8 @@ Ruby
 
 ```rb
 irb
-> require "pqcrypto_lai"
-> PqcryptoLai.keygen(23, 5, [3,10])
+> require "laicrypto"
+> laicrypto.keygen(23, 5, [3,10])
 ```
 
 ---
