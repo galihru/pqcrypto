@@ -133,6 +133,12 @@ pip install pqcrypto
 npm install pqlaicrypto
 ```
 
+### From Ruby GEMFILE
+```bash
+gem build pqcrypto_lai.gemspec
+gem install ./pqcrypto-0.1.0.gem
+```
+
 ### From Source
 
 ```bash
@@ -286,6 +292,14 @@ const { C1, C2, r } = encrypt(m, Q, k, p, a, P0);
 
 const decrypted = decrypt(C1, C2, k, r, a, p);
 console.log('Pesan asli:', decrypted.toString());
+```
+
+Ruby
+
+```rb
+irb
+> require "pqcrypto_lai"
+> PqcryptoLai.keygen(23, 5, [3,10])
 ```
 
 ---
