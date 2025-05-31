@@ -135,7 +135,7 @@ npm install pqlaicrypto
 
 ### From Ruby GEMFILE
 ```bash
-gem build pqcrypto_lai.gemspec
+gem build pqcrypto.gemspec
 gem install ./pqcrypto-0.1.0.gem
 ```
 
