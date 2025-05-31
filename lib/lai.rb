@@ -1,8 +1,8 @@
 require "digest"
 
-require_relative "pqcrypto_lai/version"
+require_relative "lai/version"
 
-module PqcryptoLai
+module pqcrypto
   class Error < StandardError; end
 
   # H(x, y, s, p) = SHA256(x || y || s) mod p
