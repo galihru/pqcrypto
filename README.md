@@ -141,24 +141,124 @@ pip install .
 ## Usage Example
 
 ```python
+import math
+
 from pqcrypto import keygen, encrypt, decrypt
 
-# Parameters
-a = 5
 p = 10007
+a = 5
 P0 = (1, 0)
 
-# Key generation
-private_k, public_Q = keygen(p, a, P0)
+def max_block_size(p: int) -> int:
+    bit_len = p.bit_length()
+    return (bit_len - 1) // 8
 
-# Encryption
-text = 1234
-C1, C2 = encrypt(text, public_Q, p, a, P0)
+def text_to_int_blocks(text: str, p: int) -> list[int]:
+    raw_bytes = text.encode("utf-8")
+    B = max_block_size(p)
+    if B < 1:
+        raise ValueError("Prime p terlalu kecil untuk menyimpan satu byte pun.")
 
-# Decryption
-m_out = decrypt(C1, C2, private_k, a, p)
-assert m_out == text
-print("Recovered message:", m_out)
+    blocks = []
+    # Hitung jumlah blok
+    n_blocks = math.ceil(len(raw_bytes) / B)
+    for i in range(n_blocks):
+        start = i * B
+        end = start + B
+        chunk = raw_bytes[start:end]
+        m_int = int.from_bytes(chunk, byteorder="big")
+        if m_int >= p:
+            raise ValueError("Blok integer melebihi modulus p.")
+        blocks.append(m_int)
+
+    return blocks
+
+
+def int_blocks_to_text(blocks: list[int], p: int) -> str:
+    all_bytes = bytearray()
+    for m_int in blocks:
+        if not (0 <= m_int < p):
+            raise ValueError(f"Integer block {m_int} di luar range [0, p).")
+        if m_int == 0:
+            chunk_bytes = b"\x00"
+        else:
+            byte_len = math.ceil(m_int.bit_length() / 8)
+            chunk_bytes = m_int.to_bytes(byte_len, byteorder="big")
+        all_bytes.extend(chunk_bytes)
+
+    return all_bytes.decode("utf-8", errors="strict")
+
+def encrypt_text(
+    text: str,
+    k: int,
+    public_Q: tuple[int, int],
+    p: int,
+    a: int,
+    P0: tuple[int, int],
+) -> list[dict]:
+    int_blocks = text_to_int_blocks(text, p)
+    ciphertext = []
+
+    for m_int in int_blocks:
+        # encrypt() sudah otomatis retry jika T^r gagal
+        C1, C2, r = encrypt(m_int, public_Q, k, p, a, P0)
+        ciphertext.append({
+            "C1": (C1[0], C1[1]),
+            "C2": (C2[0], C2[1]),
+            "r": r,
+        })
+
+    return ciphertext
+
+def decrypt_text(
+    ciphertext: list[dict],
+    k: int,
+    p: int,
+    a: int,
+) -> str:
+    int_blocks = []
+    for block in ciphertext:
+        x1, y1 = block["C1"]
+        x2, y2 = block["C2"]
+        r = block["r"]
+        m_int = decrypt((x1, y1), (x2, y2), k, r, a, p)
+        int_blocks.append(m_int)
+
+    return int_blocks_to_text(int_blocks, p)
+
+if __name__ == "__main__":
+    # 6.1. Generate keypair
+    private_k, public_Q = keygen(p, a, P0)
+    print("=== Key Generation ===")
+    print("Private k :", private_k)
+    print("Public  Q :", public_Q)
+    print()
+
+    original_text = """
+function hello(name) {
+    console.log("Hello, " + name + "!");
+}
+hello("LAI User");
+""".strip()
+
+    print("=== Original Text ===")
+    print(original_text)
+    print()
+
+    ciphertext = encrypt_text(original_text, private_k, public_Q, p, a, P0)
+    print("=== Ciphertext (serialized) ===")
+    for i, blk in enumerate(ciphertext):
+        print(f"Block {i+1}: C1={blk['C1']}, C2={blk['C2']}, r={blk['r']}")
+
+    print()
+    recovered_text = decrypt_text(ciphertext, private_k, p, a)
+    print("=== Decrypted Text ===")
+    print(recovered_text)
+    print()
+
+    assert recovered_text == original_text, "Decryption mismatch!"
+    print("Round-trip successful! Teks tepat sama dengan semula.")
+
 ```
 
 ---
