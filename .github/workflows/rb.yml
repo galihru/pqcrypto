@@ -7,28 +7,40 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) Checkout kode
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2) Setup Ruby environment
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.1
 
+      # 3) Build gem file (.gem)
       - name: Build gem
         run: gem build laicrypto.gemspec
 
-      - name: Push gem to RubyGems
+      # 4) Konfigurasi ~/.gem/credentials agar bisa push ke GH Packages
+      - name: Configure RubyGems credentials for GitHub Packages
+        run: |
+          mkdir -p ~/.gem
+          echo -n "---\n" > ~/.gem/credentials
+          echo -n "https://rubygems.pkg.github.com/4211421036: $GHCR_API_KEY\n" >> ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
         env:
-          # Atur API key di environment yang akan dipakai gem push
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          # Ambil secret PAT yang kita simpan sebagai GHCR_API_KEY
+          GHCR_API_KEY: ${{ secrets.GHCR_API_KEY }}
+
+      # 5) Push gem ke GitHub Packages (tidak perlu --api-key karena credentials sudah di ~/.gem/credentials)
+      - name: Push gem to GitHub Packages
         run: |
           VERSION=$(grep -Po '(?<=VERSION = ")[^"]*' lib/laicrypto/version.rb)
-          # Tidak perlu lagi --api-key, karena GEM_HOST_API_KEY sudah di-set
-          gem push "laicrypto-${VERSION}.gem"
+          gem push --host https://rubygems.pkg.github.com/4211421036 "laicrypto-${VERSION}.gem"
