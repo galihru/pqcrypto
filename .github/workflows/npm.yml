@@ -17,12 +17,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          registry-url: https://npm.pkg.github.com/
-          scope: '@galihridhoutomo'  # Ganti dengan scope kamu
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@galihridhoutomo'
 
       - name: Install dependencies
         run: npm install
