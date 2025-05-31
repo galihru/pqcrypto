@@ -1,9 +1,8 @@
-name: Publish NPM Package to GitHub Packages
+name: Publish to GitHub Packages
 
 on:
   push:
-    branches: [ main ]
-    tags: ['v*.*.*']
+    branches: [main]
 
 permissions:
   contents: read
@@ -12,33 +11,25 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: 
-      name: github-packages
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-  
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        registry-url: 'https://npm.pkg.github.com'
-        scope: '@galihridhoutomo'
-        # Tambahkan ini:
-        always-auth: true
-  
-    - name: Install dependencies
-      run: |
-        npm install
-        npm pkg fix
-        
-    - name: Create .npmrc file
-      run: |
-        echo "@galihridhoutomo:registry=https://npm.pkg.github.com" >> .npmrc
-        echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-  
-    - name: Publish to GitHub Packages
-      run: npm publish --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          registry-url: https://npm.pkg.github.com
+          always-auth: true
+      
+      - name: Create .npmrc
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "registry=https://npm.pkg.github.com/galihridhoutomo" >> .npmrc
+          
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Publish package
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
