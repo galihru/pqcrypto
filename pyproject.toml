@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "laicrypto"
-version = "0.1.1"
+version = "0.1.2"
 authors = [{name="GALIH RIDHO UTOMO", email="g4lihru@students.unnes.ac.id"}]
 description = "Post-quantum Lemniscate-AGM Isogeny Encryption (LAI)"
 readme = "README.md"
