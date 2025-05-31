@@ -1,5 +1,7 @@
 # pqcrypto_lai.gemspec
 
+require_relative "lib/laicrypto/version"
+
 Gem::Specification.new do |spec|
   spec.name          = "laicrypto"
   spec.version       = Laicrypto::VERSION
