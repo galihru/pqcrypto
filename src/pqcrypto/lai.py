@@ -1,3 +1,5 @@
+# File: src/pqcrypto/lai.py
+
 """
 lai.py
 
@@ -118,7 +120,7 @@ def _pow_T_range(P: Tuple[int, int], start_s: int, exp: int, a: int, p: int) -> 
       for i in 0 .. exp-1:
           result = T(result, start_s + i)
 
-    Return T^exp(P) dengan seed tepat.
+    Return T^exp(P) dengan seed index yang tepat.
     """
     result = P
     curr_s = start_s
@@ -149,58 +151,54 @@ def keygen(p: int, a: int, P0: Tuple[int, int]) -> Tuple[int, Tuple[int, int]]:
 def encrypt(
     m: int,
     public_Q: Tuple[int, int],
+    k: int,
     p: int,
     a: int,
     P0: Tuple[int, int],
-) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+) -> Tuple[Tuple[int, int], Tuple[int, int], int]:
     """
     Enkripsi:
       1. Pilih r random di [1, p-1].
-      2. C1 = T^r(P0) dengan seed 1..r.
-         Jika gagal, ulangi dengan r baru.
-      3. Sr = T^r(Q) dengan seed (k+1)..(k+r).
-         Jika gagal, ulangi dengan r baru.
+      2. C1 = T^r(P0) dengan seed indices 1..r.
+      3. Sr = T^r(public_Q) dengan seed indices (k+1)..(k+r).
       4. M = (m mod p, 0).
-      5. C2 = M + Sr  (penjumlahan komponen).
-      Return (C1, C2).
+      5. C2 = M + Sr.
+      Return (C1, C2, r).
     """
     while True:
         r = secrets.randbelow(p - 1) + 1
 
-        # Hitung C1 = T^r(P0), seeds 1..r
+        # 2. C1 = T^r(P0), seeds 1..r
         try:
             C1 = _pow_T_range(P0, start_s=1, exp=r, a=a, p=p)
         except ValueError:
             continue  # coba r baru
 
-        # Hitung Sr = T^r(public_Q), seeds (k+1)..(k+r)
-        # Kita butuh k dari public_Q; namun public_Q dihitung dg seed 1..k
-        # Jadi kapan pembuatan public_Q dilakukan, kita simpan k
-        # Untuk keperluan encrypt(), public_Q seharusnya sudah dibuat dengan keygen() and k diketahui.
+        # 3. Sr = T^r(public_Q), seeds (k+1)..(k+r)
+        try:
+            Sr = _pow_T_range(public_Q, start_s=k + 1, exp=r, a=a, p=p)
+        except ValueError:
+            continue  # coba r baru
 
-        # Sebagai trik: kita harus mengoper k ke encrypt()
-        # => ubah signature encrypt() menjadi encrypt(m, public_Q, k, p, a, P0)
-
-        raise NotImplementedError(
-            "Signature encrypt() perlu parameter 'k' agar dapat menggunakan seed yang benar."
-        )
+        M = (m % p, 0)
+        C2 = ((M[0] + Sr[0]) % p, (M[1] + Sr[1]) % p)
+        return C1, C2, r
 
 
 def decrypt(
     C1: Tuple[int, int],
     C2: Tuple[int, int],
     k: int,
+    r: int,
     a: int,
     p: int,
 ) -> int:
     """
     Dekripsi:
-      S = T^k(C1) dengan seed (r+1)..(r+k).
-      M = (C2.x - S.x) mod p
+      1. S = T^k(C1) dengan seed indices (r+1)..(r+k).
+      2. M = (C2.x - S.x) mod p
       Return komponen pertama M.
-      Jika gagal, melempar ValueError.
     """
-    # Sama catatan: perlu mengetahui r agar seed benar
-    raise NotImplementedError(
-        "Signature decrypt() perlu parameter 'r' agar dapat menggunakan seed yang benar."
-    )
+    S = _pow_T_range(C1, start_s=r + 1, exp=k, a=a, p=p)
+    M0 = (C2[0] - S[0]) % p
+    return M0
