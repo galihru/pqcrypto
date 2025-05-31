@@ -1,8 +1,8 @@
 # pqcrypto_lai.gemspec
 
 Gem::Specification.new do |spec|
-  spec.name          = "lai_crypto"
-  spec.version       = pqcrypto::VERSION
+  spec.name          = "laicrypto"
+  spec.version       = Laicrypto::VERSION
   spec.summary       = "LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves."
   spec.authors       = ["GALIH RIDHO UTOMO"]
   spec.email         = ["g4lihru@students.unnes.ac.id"]
