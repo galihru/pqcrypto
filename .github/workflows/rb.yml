@@ -40,6 +40,11 @@ jobs:
           GHCR_API_KEY: ${{ secrets.GHCR_API_KEY }}
 
       # 5) Push gem ke GitHub Packages (tidak perlu --api-key karena credentials sudah di ~/.gem/credentials)
+      - name: Build Gem
+        run: |
+          gem build laicrypto.gemspec
+          ls -la  # Verifikasi apakah file .gem sudah ada
+      
       - name: Push to GitHub Packages
         env:
           GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_AUTH_TOKEN }}
@@ -47,4 +52,4 @@ jobs:
           mkdir -p ~/.gem
           echo -e "---\n:github: $GEM_HOST_API_KEY" > ~/.gem/credentials
           chmod 0600 ~/.gem/credentials
-          gem push --key github --host https://rubygems.pkg.github.com/4211421036 g4lihru-laicrypto-*.gem
+          gem push --key github --host https://rubygems.pkg.github.com/4211421036 g4lihru-laicrypto-0.1.0.gem
