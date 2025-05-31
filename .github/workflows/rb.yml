@@ -26,7 +26,9 @@ jobs:
 
       - name: Push gem to RubyGems
         env:
-          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          # Atur API key di environment yang akan dipakai gem push
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           VERSION=$(grep -Po '(?<=VERSION = ")[^"]*' lib/laicrypto/version.rb)
-          gem push "laicrypto-${VERSION}.gem" --api-key $RUBYGEMS_API_KEY
+          # Tidak perlu lagi --api-key, karena GEM_HOST_API_KEY sudah di-set
+          gem push "laicrypto-${VERSION}.gem"
