@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Target framework: .NET Standard 2.0 agar bisa dipakai di .NET Framework, .NET Core, dll. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+
+    <!-- Metadata NuGet: ganti dengan metadata yang sesuai -->
+    <PackageId>PQCrypto.Lai</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>GALIH RIDHO UTOMO</Authors>
+    <Company>UNNES</Company>
+    <Description>Post-quantum Lemniscate-AGM Isogeny (LAI) Encryption Library for .NET</Description>
+    <PackageTags>pqcrypto;post-quantum;encryption;lai;isogeny</PackageTags>
+    <RepositoryUrl>https://github.com/4211421036/PQCrypto.NET</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/4211421036/PQCrypto.NET</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <!-- Jika Anda punya file LICENSE di repo, tambahkan: -->
+    <IncludeLicenseFile>true</IncludeLicenseFile>
+    <LicenseFile>LICENSE</LicenseFile>
+    <!-- Sertakan XML dokumentasi jika Anda ingin Intellisense di IDE -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Jika library Anda membutuhkan dependensi lain, tambahkan di sini.
+       Misal, jika Anda butuh System.Numerics untuk BigInteger: -->
+  <!--
+  <ItemGroup>
+    <PackageReference Include="System.Numerics" Version="4.3.0" />
+  </ItemGroup>
+  -->
+
+</Project>
