@@ -1,22 +1,63 @@
 # pqcrypto
 
-<img src="https://github.com/4211421036/pqcrypto/blob/main/logo.png" />
+<img src="https://github.com/4211421036/pqcrypto/blob/main/logo.png" alt="pqcrypto Logo" width="200"/>
 
 **Post-Quantum Lemniscate-AGM Isogeny (LAI) Encryption**
 
-A Python package providing a reference implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme. LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.
+A multi-language reference implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme.  
+LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering conjectured resistance against quantum-capable adversaries.
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Mathematical Formulation](#mathematical-formulation)
+3. [Features](#features)
+4. [Releases & Package Managers](#releases--package-managers)  
+   4.1. [Python (PyPI)](#python-pypi)  
+   4.2. [JavaScript (npm)](#javascript-npm)  
+   4.3. [Ruby (RubyGems)](#ruby-rubygems)  
+   4.4. [.NET (NuGet)](#net-nuget)  
+   4.5. [Java (Maven)](#java)  
+5. [Usage Examples](#usage-examples)  
+   5.1. [Python](#python)  
+   5.2. [JavaScript](#javascripts)  
+   5.3. [Ruby](#ruby)  
+   5.4. [.NET (C#)](#net-c)  
+   5.5. [Java](#java)  
+6. [API Reference](#api-reference)  
+7. [Testing](#testing)  
+8. [Contributing & Development](#contributing--development)  
+9. [License](#license)
 
 ---
 
 ## Project Overview
 
-This library implements the core mathematical primitives and high-level API of the LAI scheme, including:
+This library implements all core mathematical primitives and high-level APIs for LAI:
 
-* **Key Generation**: Derivation of a private scalar and corresponding public point via binary exponentiation of the LAI transformation.
-* **Encryption**: Secure encryption of integer messages modulo a prime.
-* **Decryption**: Accurate recovery of plaintext via inverse transform.
+- **Hash-Based Seed Function**  
+  $$\( H(x, y, s) = \mathrm{SHA256}\bigl(x\,\|\,y\,\|\,s\bigr) \bmod p \)$$
+- **Modular Square Root** via Tonelli–Shanks (with fast branch if $$\(p \equiv 3 \pmod 4\)$$).
+- **LAI Transformation**
 
-The code is annotated with direct correspondence to the mathematical definitions and pseudocode, making it suitable for research, educational use, and further development.
+  $$\[
+T\bigl((x,y),\,s;\,a,\,p\bigr)
+\;=\;
+\Bigl(\,
+  x' \;=\; \tfrac{x + a + h}{2} \bmod p,\;\;
+  y' \;=\; \sqrt{x\,y + h}\bmod p
+\Bigr)
+\]
+$$
+
+  where $$\(h = H(x,y,s)\)$$.
+- **Binary Exponentiation** of $$\(T\)$$ to compute $$\(T^k(P_0)\)$$ in $$\(O(\log k)\)$$ time.
+- **Key Generation, Encryption, and Decryption** routines for integer messages $$\(0 \le m < p\)$$.
+- **Bulk JSON Decryption**: decrypt an entire JSON payload into raw bytes (e.g., to reconstruct a file or UTF-8 text).
+
+All language‐specific wrappers expose identical API semantics under the hood. This makes pqcrypto ideal for cross-platform experiments, research, and educational purposes.
 
 ---
 
@@ -24,315 +65,489 @@ The code is annotated with direct correspondence to the mathematical definitions
 
 ### 1. Hash-Based Seed Function
 
-Define:
+For $$\(x, y, s \in \mathbb{Z}_p\)$$, define:
 
 $$
-H(x, y, s) \;=\; \mathrm{SHA256}\bigl(x \,\|\, y \,\|\, s\bigr) \bmod p
+\[
+H(x, y, s) \;=\; \mathrm{SHA256}\bigl(\text{bytes}(x)\,\|\,\text{bytes}(y)\,\|\,\text{bytes}(s)\bigr)\;\bmod\;p,
+\]
 $$
 
-where \$x,y,s \in \mathbb{Z}\_p\$ and \$|\$ denotes byte-string concatenation.
+where “$$\(\|\)$$” denotes concatenation of the big-endian byte representations.
 
 ### 2. Modular Square Root (Tonelli–Shanks)
 
-Compute \$z = \sqrt{a} \bmod p\$ for prime \$p\$:
+Solve $$\(z^2 \equiv a \pmod p\) for prime \(p\)$$:
 
-* If \$p \equiv 3 \pmod{4}\$:
-  $z \;=\; a^{\frac{p+1}{4}} \bmod p$
-* Otherwise, use the full Tonelli–Shanks algorithm for general primes.
-
-### 3. LAI Transformation \$T\$
-
-Given a point \$(x,y) \in \mathbb{F}\_p^2\$, parameter \$a\$, and seed index \$s\$, define:
+- If $$\(p \equiv 3 \pmod 4\)$$:
 
 $$
-\begin{aligned}
-    h &= H(x,y,s), \[4pt]
-    x' &= \frac{x + a + h}{2} \bmod p, \[4pt]
-    y' &= \sqrt{x \, y + h} \bmod p.
-\end{aligned}
+  \[
+    z = a^{\frac{p+1}{4}} \bmod p.
+  \]
 $$
 
-Thus,
+- Otherwise: apply the general Tonelli–Shanks algorithm in $$ \(O(\log^2 p)\) $$ time.
 
-$T\bigl((x,y), s; a, p\bigr) = (\,x', y').$
+### 3. LAI Transformation $$ \(T\) $$
 
-### 4. Binary Exponentiation of \$T\$
+Given $$\((x,y)\in\mathbb{F}_p^2\)$$, parameter $$\(a\)$$, and seed index $$\(s\)$$, define
 
-To compute \$T^k(P\_0)\$ efficiently, use exponentiation by squaring:
+$$
+\begin{cases}
+  h = H(x,\,y,\,s),\[6pt]
+  x' = \dfrac{x + a + h}{2}\bmod p,\[6pt]
+  y' = \sqrt{x\,y + h}\;\bmod p.
+\end{cases}
+$$
 
-```text
+Thus $$\(\;T\bigl((x,y),s;a,p\bigr) = (\,x',\,y'\,)\)$$.
+
+### 4. Binary Exponentiation of $$\(T\)$$
+
+To compute $$\(T^k(P_0)\)$$ efficiently:
+
+```
+
 function pow_T(P, k):
-    result ← P
-    base   ← P
-    s      ← 1
-    while k > 0:
-        if (k mod 2) == 1:
-            result ← T(result, s)
-        base ← T(base, s)
-        k    ← k >> 1
-        s    ← s + 1
-    return result
+result ← P
+base   ← P
+s      ← 1
+while k > 0:
+if (k mod 2) == 1:
+result ← T(result, s)
+base ← T(base, s)
+k    ← k >> 1
+s    ← s + 1
+return result
+
 ```
 
-### 5. API Algorithms
+### 5. Algorithmic API
 
-**Key Generation**
+**Key Generation**  
+```
 
-```text
 function keygen(p, a, P0):
-    k ← random integer in [1, p−1]
-    Q ← pow_T(P0, k)
-    return (k, Q)
+k ← random integer in [1, p−1]
+Q ← pow_T(P0, k)
+return (k, Q)
+
 ```
 
-**Encryption**
+**Encryption**  
+```
 
-```text
 function encrypt(m, Q, p, a, P0):
-    r  ← random integer in [1, p−1]
-    C1 ← pow_T(P0, r)
-    Sr ← pow_T(Q, r)
-    M  ← (m mod p, 0)
-    C2 ← ( (M.x + Sr.x) mod p,
-            (M.y + Sr.y) mod p )
-    return (C1, C2)
+r  ← random integer in [1, p−1]
+C1 ← pow_T(P0, r)
+Sr ← pow_T(Q, r)
+M  ← (m mod p, 0)
+C2 ← ((M.x + Sr.x) mod p, (M.y + Sr.y) mod p)
+return (C1, C2)
+
 ```
 
-**Decryption**
+**Decryption**  
+```
 
-```text
 function decrypt(C1, C2, k, a, p):
-    S   ← pow_T(C1, k)
-    M.x ← (C2.x − S.x) mod p
-    return M.x
+S   ← pow_T(C1, k)
+M.x ← (C2.x − S.x) mod p
+return M.x
+
 ```
+
+**Bulk Decryption (JSON)**  
+```
+
+function decryptAll(jsonPayload):
+parse p, a, P0, k, blocks\[]
+for each block in blocks:
+(x1,y1) = block.C1
+(x2,y2) = block.C2
+r       = block.r
+M_int   = decrypt((x1,y1),(x2,y2),k,r,a,p)
+convert M_int into fixed-length big-endian B-byte chunk
+append to output byte buffer
+return outputBuffer
+
+````
 
 ---
 
 ## Features
 
-1. **Pure Python** implementation: no external dependencies for core routines (uses `hashlib` & `secrets`).
-2. **Mathematically Annotated**: formulas and pseudocode directly reference the original scheme.
-3. **Modular Design**: separation of primitives (`H`, `sqrt_mod`, `T`) and high-level API (`keygen`, `encrypt`, `decrypt`).
-4. **General & Optimized**: Tonelli–Shanks for any prime, plus branch for \$p\equiv3\pmod4\$.
-5. **Automated Testing**: `pytest` suite for end-to-end verification.
-6. **CI/CD Ready**: PyPI publication via GitHub Actions.
+1. **Pure Implementations** (no native code)  
+   - Python: only uses `hashlib`, `secrets` (stdlib).  
+   - JavaScript: pure JS/BigInt.  
+   - Ruby: pure Ruby + `openssl`.  
+   - C#: uses `System.Numerics.BigInteger` (no external C/C++).  
+   - Java: uses `java.math.BigInteger` + Jackson for JSON.
+
+2. **Mathematically Annotated**  
+   Every function corresponds exactly to the paper’s formulas.
+
+3. **Modular Design**  
+   Separation of low‐level primitives (`H`, `sqrt_mod`, `T`) from high‐level API (`keygen`, `encrypt`, `decrypt`).
+
+4. **General & Optimized**  
+   - Fast branch for \(p\equiv3\pmod4\).  
+   - Full Tonelli–Shanks fallback for any odd prime.
+
+5. **Bulk JSON Decryption**  
+   Produce or consume large ciphertext payloads (e.g., encrypted files, JavaScript code, JSON blobs).
+
+6. **CI/CD Ready**  
+   - Python: auto‐publish to PyPI via GitHub Actions.  
+   - JS: auto‐publish to npm.  
+   - Ruby: auto‐publish to RubyGems.  
+   - C#: auto‐publish to NuGet & GitHub Packages.  
+   - Java: auto‐publish to GitHub Packages (Maven).
 
 ---
 
-## Installation
+## Releases & Package Managers
 
-### From PyPI
+### Python (PyPI)
 
 ```bash
 pip install pqcrypto
-```
+````
 
-### From NPM
+* **Package Name**: `pqcrypto`
+* **Version**: latest available on PyPI.
+* **GitHub Actions**: see `.github/workflows/python-publish.yml`.
+
+### JavaScript (npm)
+
 ```bash
 npm install pqlaicrypto
 ```
 
-### From Ruby GEMFILE
-```bash
-gem build laicrypto.gemspec
-gem install ./laicrypto-0.1.0.gem
-```
+* **Package Name**: `pqlaicrypto`
+* Exposes same API as Python, but using BigInt.
+* Published to npm (registry: `https://registry.npmjs.org`).
 
-### From Source
+### Ruby (RubyGems)
 
 ```bash
-git clone https://github.com/4211421036/pqcrypto.git
-cd pqcrypto
-pip install .
+gem install laicrypto
 ```
+
+* **Gem Name**: `laicrypto`
+* Wraps the core LAI primitives in a Ruby module.
+* Published on RubyGems.org.
+
+### .NET (NuGet)
+
+```xml
+<PackageReference Include="PQCrypto.Lai" Version="0.1.0" />
+```
+
+* **Package ID**: `PQCrypto.Lai`
+* Target framework: `netstandard2.0` (compatible with .NET Core, .NET 5+, .NET Framework).
+* Published on GitHub Packages (NuGet feed) and nuget.org (`unlisted` until you make it public).
+* **Feed URL** (GitHub Packages):
+
+  ```
+  https://nuget.pkg.github.com/4211421036/index.json
+  ```
+* **GitHub Actions**: see `.github/workflows/nuget.yml`.
+
+### Java (Maven Central / GitHub Packages)
+
+```xml
+<dependency>
+  <groupId>com.pelajaran.pqcrypto</groupId>
+  <artifactId>laicrypto</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+* **GroupId**: `com.pelajaran.pqcrypto`
+* **ArtifactId**: `laicrypto`
+* **Version**: `0.1.0`
+* Published to GitHub Packages (Maven repo) at:
+
+  ```
+  https://maven.pkg.github.com/4211421036/pqcrypto
+  ```
+* You may later mirror to Maven Central.
+* **GitHub Actions**: see `.github/workflows/publish-maven.yml`.
 
 ---
 
-## Usage Example
+## Usage Examples
 
-Python
+Below are minimal “hello, world”-style code snippets for each language wrapper.
+
+### Python
+
 ```python
 import math
-
 from pqcrypto import keygen, encrypt, decrypt
 
+# 1. Setup parameters
 p = 10007
 a = 5
 P0 = (1, 0)
 
-def max_block_size(p: int) -> int:
-    bit_len = p.bit_length()
-    return (bit_len - 1) // 8
+# 2. Generate keypair
+private_k, public_Q = keygen(p, a, P0)
+print("Private k:", private_k)
+print("Public  Q:", public_Q)
 
-def text_to_int_blocks(text: str, p: int) -> list[int]:
-    raw_bytes = text.encode("utf-8")
-    B = max_block_size(p)
-    if B < 1:
-        raise ValueError("Prime p terlalu kecil untuk menyimpan satu byte pun.")
+# 3. Encrypt integer m
+message = 2024
+C1, C2 = encrypt(message, public_Q, p, a, P0)
+print("C1:", C1, " C2:", C2)
 
-    blocks = []
-    # Hitung jumlah blok
-    n_blocks = math.ceil(len(raw_bytes) / B)
-    for i in range(n_blocks):
-        start = i * B
-        end = start + B
-        chunk = raw_bytes[start:end]
-        m_int = int.from_bytes(chunk, byteorder="big")
-        if m_int >= p:
-            raise ValueError("Blok integer melebihi modulus p.")
-        blocks.append(m_int)
-
-    return blocks
-
-
-def int_blocks_to_text(blocks: list[int], p: int) -> str:
-    all_bytes = bytearray()
-    for m_int in blocks:
-        if not (0 <= m_int < p):
-            raise ValueError(f"Integer block {m_int} di luar range [0, p).")
-        if m_int == 0:
-            chunk_bytes = b"\x00"
-        else:
-            byte_len = math.ceil(m_int.bit_length() / 8)
-            chunk_bytes = m_int.to_bytes(byte_len, byteorder="big")
-        all_bytes.extend(chunk_bytes)
-
-    return all_bytes.decode("utf-8", errors="strict")
-
-def encrypt_text(
-    text: str,
-    k: int,
-    public_Q: tuple[int, int],
-    p: int,
-    a: int,
-    P0: tuple[int, int],
-) -> list[dict]:
-    int_blocks = text_to_int_blocks(text, p)
-    ciphertext = []
-
-    for m_int in int_blocks:
-        # encrypt() sudah otomatis retry jika T^r gagal
-        C1, C2, r = encrypt(m_int, public_Q, k, p, a, P0)
-        ciphertext.append({
-            "C1": (C1[0], C1[1]),
-            "C2": (C2[0], C2[1]),
-            "r": r,
-        })
-
-    return ciphertext
-
-def decrypt_text(
-    ciphertext: list[dict],
-    k: int,
-    p: int,
-    a: int,
-) -> str:
-    int_blocks = []
-    for block in ciphertext:
-        x1, y1 = block["C1"]
-        x2, y2 = block["C2"]
-        r = block["r"]
-        m_int = decrypt((x1, y1), (x2, y2), k, r, a, p)
-        int_blocks.append(m_int)
-
-    return int_blocks_to_text(int_blocks, p)
-
-if __name__ == "__main__":
-    # 6.1. Generate keypair
-    private_k, public_Q = keygen(p, a, P0)
-    print("=== Key Generation ===")
-    print("Private k :", private_k)
-    print("Public  Q :", public_Q)
-    print()
-
-    original_text = """
-function hello(name) {
-    console.log("Hello, " + name + "!");
-}
-hello("LAI User");
-""".strip()
-
-    print("=== Original Text ===")
-    print(original_text)
-    print()
-
-    ciphertext = encrypt_text(original_text, private_k, public_Q, p, a, P0)
-    print("=== Ciphertext (serialized) ===")
-    for i, blk in enumerate(ciphertext):
-        print(f"Block {i+1}: C1={blk['C1']}, C2={blk['C2']}, r={blk['r']}")
-
-    print()
-    recovered_text = decrypt_text(ciphertext, private_k, p, a)
-    print("=== Decrypted Text ===")
-    print(recovered_text)
-    print()
-
-    assert recovered_text == original_text, "Decryption mismatch!"
-    print("Round-trip successful! Teks tepat sama dengan semula.")
-
+# 4. Decrypt using private_k
+recovered = decrypt(C1, C2, private_k, a, p)
+print("Recovered:", recovered)
+assert recovered == message
 ```
 
-JS
+If you need to encrypt an entire text/file, convert it to integer blocks via
+`int.from_bytes(...)`, then call `encrypt(...)` on each block. See the
+[Python demo](#python) in this README for details.
+
+### JavaScripts
+
 ```js
-const {
-  keygen,
-  encrypt,
-  decrypt
-} = require('pqlaicrypto');
+// Install: npm install pqlaicrypto
 
-const p = 23n;
+const { keygen, encrypt, decrypt } = require("pqlaicrypto");
+
+const p = 10007n;
 const a = 5n;
-const P0 = [3n, 10n];
+const P0 = [1n, 0n];
 
+// 1. Generate keypair
 const { k, Q } = keygen(p, a, P0);
+console.log("Private k:", k.toString());
+console.log("Public  Q:", Q);
 
-const m = 7n;
+// 2. Encrypt a small integer
+const m = 2024n;
 const { C1, C2, r } = encrypt(m, Q, k, p, a, P0);
+console.log("C1:", C1, "C2:", C2, "r:", r.toString());
 
-const decrypted = decrypt(C1, C2, k, r, a, p);
-console.log('Pesan asli:', decrypted.toString());
+// 3. Decrypt
+const recovered = decrypt(C1, C2, k, r, a, p);
+console.log("Recovered:", recovered.toString());
 ```
 
-Ruby
+Use `BigInt`-aware file/block conversions to encrypt larger messages or files.
 
-```rb
-irb
-> require "laicrypto"
-> laicrypto.keygen(23, 5, [3,10])
+### Ruby
+
+```ruby
+# Install: gem install laicrypto
+require "laicrypto"
+
+p  = 10007
+a  = 5
+P0 = [1, 0]
+
+# 1. Generate keypair
+k, Q = LAI.keygen(p, a, P0)
+puts "Private k: #{k}"
+puts "Public  Q: #{Q.inspect}"
+
+# 2. Encrypt integer
+message = 2024
+C1, C2, r = LAI.encrypt(message, Q, k, p, a, P0)
+puts "C1: #{C1.inspect}  C2: #{C2.inspect}  r: #{r}"
+
+# 3. Decrypt
+recovered = LAI.decrypt(C1, C2, k, r, a, p)
+puts "Recovered: #{recovered}"
+```
+
+Similar to Python, convert larger text to integer blocks using `String#bytes`
+and `Integer()`.
+
+### .NET (C#)
+
+```csharp
+// Install via NuGet: 
+//   <PackageReference Include="PQCrypto.Lai" Version="0.1.0" />
+
+using System;
+using System.Numerics;
+using PQCrypto; // namespace containing LaiCrypto
+
+class Demo {
+    static void Main(string[] args) {
+        // 1. Setup parameters
+        BigInteger p = 10007;
+        BigInteger a = 5;
+        LaiCrypto.Point P0 = new LaiCrypto.Point(1, 0);
+
+        // 2. Generate keypair
+        var kp = LaiCrypto.KeyGen(p, a, P0);
+        Console.WriteLine($"Private k: {kp.k}");
+        Console.WriteLine($"Public  Q: ({kp.Q.x}, {kp.Q.y})");
+
+        // 3. Encrypt integer
+        BigInteger message = 2024;
+        var ct = LaiCrypto.Encrypt(message, kp.Q, p, a, P0);
+        Console.WriteLine($"C1: ({ct.C1.x}, {ct.C1.y})  C2: ({ct.C2.x}, {ct.C2.y})  r: {ct.r}");
+
+        // 4. Decrypt
+        BigInteger recovered = LaiCrypto.Decrypt(ct.C1, ct.C2, kp.k, ct.r, a, p);
+        Console.WriteLine($"Recovered: {recovered}");
+        if (recovered != message) throw new Exception("Decryption mismatch!");
+    }
+}
+```
+
+To decrypt a JSON payload:
+
+```csharp
+using System.IO;
+using Newtonsoft.Json.Linq; // or System.Text.Json
+
+var json = File.ReadAllText("ciphertext.json");
+var jNode = JObject.Parse(json);
+byte[] plaintextBytes = LaiCrypto.DecryptAll(jNode);
+string plaintext = System.Text.Encoding.UTF8.GetString(plaintextBytes);
+```
+
+### Java
+
+```xml
+<!-- In your pom.xml -->
+<dependency>
+  <groupId>com.pelajaran.pqcrypto</groupId>
+  <artifactId>laicrypto</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+```java
+import com.pelajaran.pqcrypto.LaiCrypto;
+import com.pelajaran.pqcrypto.LaiCrypto.Point;
+import com.pelajaran.pqcrypto.LaiCrypto.KeyPair;
+import com.pelajaran.pqcrypto.LaiCrypto.Ciphertext;
+
+import java.math.BigInteger;
+
+public class LAIDemo {
+    public static void main(String[] args) throws Exception {
+        // 1. Setup
+        BigInteger p = BigInteger.valueOf(10007);
+        BigInteger a = BigInteger.valueOf(5);
+        Point P0 = new Point(BigInteger.ONE, BigInteger.ZERO);
+
+        // 2. Generate key pair
+        KeyPair kp = LaiCrypto.keyGen(p, a, P0);
+        System.out.println("Private k: " + kp.k);
+        System.out.println("Public  Q: (" + kp.Q.x + ", " + kp.Q.y + ")");
+
+        // 3. Encrypt integer
+        BigInteger message = BigInteger.valueOf(2024);
+        Ciphertext ct = LaiCrypto.encrypt(message, kp.Q, p, a, P0);
+        System.out.println("C1: (" + ct.C1.x + ", " + ct.C1.y + ")");
+        System.out.println("C2: (" + ct.C2.x + ", " + ct.C2.y + ")");
+        System.out.println("r:  " + ct.r);
+
+        // 4. Decrypt
+        BigInteger recovered = LaiCrypto.decrypt(ct.C1, ct.C2, kp.k, ct.r, a, p);
+        System.out.println("Recovered: " + recovered);
+    }
+}
+```
+
+To decrypt a JSON payload in Java:
+
+```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+
+// ...
+ObjectMapper mapper = new ObjectMapper();
+JsonNode root = mapper.readTree(new File("ciphertext.json"));
+byte[] plaintextBytes = LaiCrypto.decryptAll(root);
+String plaintext = new String(plaintextBytes, StandardCharsets.UTF_8);
 ```
 
 ---
 
 ## API Reference
 
-| Function                             | Description                             |
-| ------------------------------------ | --------------------------------------- |
-| `H(x, y, s, p) -> int`               | Hash-based seed modulo \$p\$.           |
-| `sqrt_mod(a, p) -> int`              | Modular square root via Tonelli–Shanks. |
-| `T(point, s, a, p) -> (int, int)`    | One LAI transform step.                 |
-| `keygen(p, a, P0) -> (k, Q)`         | Generate private key and public point.  |
-| `encrypt(m, Q, p, a, P0) -> (C1,C2)` | Encrypt integer message.                |
-| `decrypt(C1, C2, k, a, p) -> int`    | Decrypt ciphertext to integer.          |
+| Function                                                                                                     | Description                                                                                    |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `H(x: BigInt, y: BigInt, s: BigInt, p: BigInt) → BigInt`                                                     | SHA-256(x \| y \| s) mod p.                                                                    |
+| `sqrt_mod(a: BigInt, p: BigInt) → BigInt or null`                                                            | Compute $\sqrt{a} \bmod p$. Returns null if no root exists.                                    |
+| `T(point: (BigInt,BigInt), s: BigInt, a: BigInt, p: BigInt) → (BigInt,BigInt)`                               | One LAI transform step.                                                                        |
+| `pow_T(P, startS: BigInt, exp: BigInt, a: BigInt, p: BigInt) → (BigInt,BigInt)`                              | Compute $T^{\text{exp}}(P)$ by exponentiation by squaring.                                     |
+| `keygen(p: BigInt, a: BigInt, P0: (BigInt,BigInt)) → (k: BigInt, Q: (BigInt,BigInt))`                        | Generate a random private key k and public point Q = Tᵏ(P₀).                                   |
+| `encrypt(m: BigInt, Q: (BigInt,BigInt), k: BigInt, p: BigInt, a: BigInt, P0: (BigInt,BigInt)) → (C1, C2, r)` | Encrypt integer m (< p) yielding C1, C2, and randomness r.                                     |
+| `decrypt(C1: (BigInt,BigInt), C2: (BigInt,BigInt), k: BigInt, r: BigInt, a: BigInt, p: BigInt) → BigInt`     | Decrypt one block, returning the original integer m.                                           |
+| `decryptAll(jsonPayload) → byte[]`                                                                           | Read entire JSON ciphertext payload (array of blocks) and return concatenated plaintext bytes. |
 
 ---
 
 ## Testing
 
-```bash
-pytest --disable-warnings -q
-```
+Each language wrapper includes its own test suite:
+
+* **Python**:
+
+  ```bash
+  pytest --disable-warnings -q
+  ```
+
+* **JavaScript**:
+
+  ```bash
+  npm test
+  ```
+
+* **Ruby**:
+
+  ```bash
+  bundle exec rspec
+  ```
+
+* **.NET (C#)**:
+
+  ```bash
+  dotnet test
+  ```
+
+* **Java (Maven)**:
+
+  ```bash
+  mvn test
+  ```
+
+Make sure all tests pass locally before opening a pull request.
 
 ---
 
 ## Contributing & Development
 
-1. Fork the repo
-2. Create branch: `git checkout -b feature/xyz`
-3. Implement changes with corresponding tests
-4. Run tests: `pytest`
-5. Submit Pull Request
+1. **Fork the repository**
+2. **Create a feature branch**
 
-Please follow PEP 8 and include unit tests for new functionality.
+   ```bash
+   git checkout -b feature/your_feature
+   ```
+3. **Implement changes**
+
+   * Add or fix primitives/pseudo-code as needed.
+   * Add unit tests for any new functionality.
+4. **Run tests** in all supported languages.
+5. **Commit & push**, then open a pull request.
+
+Please follow PEP 8 style in Python, StandardJS in JavaScript, Ruby Style Guide, C# coding conventions, and Java conventions. Include thorough documentation for any new API.
 
 ---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
