@@ -8,15 +8,12 @@ on:
   push:
     branches:
       - main
-    # Hanya trigger ulang workflow bila file berikut berubah
     paths:
       - 'pom.xml'
       - 'src/**'
-      - '.github/workflows/maven.yml'
-  # Ketika user mem‐push tag (contoh: “v1.0.0”)
+      - '.github/workflows/npm.yml'
   
 jobs:
-  # Job ini untuk build + publish ke GitHub Packages
   publish-github-packages:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
