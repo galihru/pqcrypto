@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'src/PQCrypto/**'
+      - 'laicrypto/**'
       - '.github/workflows/nuget.yml'
       - 'README.md'
 
