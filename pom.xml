@@ -5,12 +5,13 @@
            https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
+
   <groupId>com.pelajaran.pqcrypto</groupId>
-  <artifactId>laicrypto</artifactId>
+  <artifactId>lairypto</artifactId>
   <version>0.1.0</version>
   <packaging>jar</packaging>
   <name>LAICrypto</name>
-  <description>Post-Quantum LAI Encryption Library (Java)</description>
+  <description>LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.</description>
   <url>https://github.com/4211421036/pqcrypto</url>
 
   <licenses>
@@ -21,16 +22,25 @@
     </license>
   </licenses>
 
-  <repositories>
-    <repository>
-      <id>central</id>
-      <url>https://repo.maven.apache.org/maven2/</url>
-    </repository>
-  </repositories>
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <jackson.version>2.15.2</jackson.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
+
   <distributionManagement>
     <repository>
       <id>github</id>
-      <url>https://maven.pkg.github.com/4211421036/laicrypto</url>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/4211421036/pqcrypto</url>
     </repository>
   </distributionManagement>
 
@@ -40,10 +50,11 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
         </configuration>
       </plugin>
-    </plugins>
+
+      plugins>
   </build>
 </project>
