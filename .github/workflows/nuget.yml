@@ -10,7 +10,7 @@ on:
       - 'README.md'
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,14 +33,14 @@ jobs:
 
       - name: Push to GitHub Packages (NuGet)
         env:
-          NUGET_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
+          # Hanya satu token: GH_PACKAGES_TOKEN (GitHub PAT dengan scope write:packages)
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd laicrypto/nupkg
           for pkg in *.nupkg; do
             echo "Pushing $pkg to GitHub Packages..."
             dotnet nuget push "$pkg" \
-              --api-key "$NUGET_AUTH_TOKEN" \
+              --api-key "$GH_PACKAGES_TOKEN" \
               --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
               --skip-duplicate
           done
