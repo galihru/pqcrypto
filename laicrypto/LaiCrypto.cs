@@ -140,7 +140,6 @@ namespace PQCrypto
         }
         public static BigInteger DecryptBlock((BigInteger X, BigInteger Y) C1, (BigInteger X, BigInteger Y) C2, BigInteger k, BigInteger r, BigInteger a, BigInteger p)
         {
-            // seeds mulai dari r+1 hingga r+k
             var S = PowT(C1, r + 1, (int)k, a, p);
             BigInteger M = (C2.X - S.X + p) % p;
             return M;
@@ -172,7 +171,6 @@ namespace PQCrypto
                     var mBytesLE = mBytesLittle;
                     if (mBytesLE.Length > 1 && mBytesLE[mBytesLE.Length - 1] == 0x00)
                     {
-                        // Pastikan byte ini hasil sign extension, bukan data
                         byte[] tmp = new byte[mBytesLE.Length - 1];
                         Array.Copy(mBytesLE, tmp, tmp.Length);
                         mBytesLE = tmp;
