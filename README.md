@@ -2,6 +2,48 @@
 
 <img src="https://github.com/4211421036/pqcrypto/blob/main/logo.png" alt="pqcrypto Logo"/>
 
+<p align="center" style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.5em;">
+  <!-- PyPI -->
+  <a href="https://pypi.org/project/laicrypto/">
+    <img src="https://img.shields.io/pypi/v/laicrypto.svg" alt="PyPI version"/>
+  </a>
+  <a href="https://pypi.org/project/laicrypto/">
+    <img src="https://img.shields.io/pypi/dm/laicrypto.svg" alt="PyPI downloads"/>
+  </a>
+
+  <!-- npm -->
+  <a href="https://www.npmjs.com/package/pqlaicrypto">
+    <img src="https://img.shields.io/npm/v/pqlaicrypto.svg" alt="npm version"/>
+  </a>
+  <a href="https://www.npmjs.com/package/pqlaicrypto">
+    <img src="https://img.shields.io/npm/dm/pqlaicrypto.svg" alt="npm downloads"/>
+  </a>
+
+  <!-- RubyGems -->
+  <a href="https://rubygems.org/gems/laicrypto">
+    <img src="https://img.shields.io/gem/v/laicrypto.svg" alt="RubyGems version"/>
+  </a>
+  <a href="https://rubygems.org/gems/laicrypto">
+    <img src="https://img.shields.io/gem/dt/laicrypto.svg" alt="RubyGems downloads"/>
+  </a>
+
+  <!-- NuGet -->
+  <a href="https://www.nuget.org/packages/PQCrypto.Lai/">
+    <img src="https://img.shields.io/nuget/v/PQCrypto.Lai.svg" alt="NuGet version"/>
+  </a>
+  <a href="https://www.nuget.org/packages/PQCrypto.Lai/">
+    <img src="https://img.shields.io/nuget/dt/PQCrypto.Lai.svg" alt="NuGet downloads"/>
+  </a>
+
+  <!-- Maven Central -->
+  <a href="https://search.maven.org/artifact/com.pelajaran.pqcrypto/laicrypto">
+    <img src="https://img.shields.io/maven-central/v/com.pelajaran.pqcrypto/laicrypto.svg" alt="Maven Central version"/>
+  </a>
+  <a href="https://search.maven.org/artifact/com.pelajaran.pqcrypto/laicrypto">
+    <img src="https://img.shields.io/maven-central/dt/com.pelajaran.pqcrypto/laicrypto.svg" alt="Maven Central downloads"/>
+  </a>
+</p>
+
 **Post-Quantum Lemniscate-AGM Isogeny (LAI) Encryption**
 
 A multi-language reference implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme.  
