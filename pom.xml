@@ -33,27 +33,21 @@
 
   <developers>
     <developer>
-      <id>4211421036</id>
-      <name>GALIH RIDHO UTOMO</name>
-      <email>g4lihru@students.unnes.ac.id</email>
+      <id>your-github-username</id>
+      <name>Your Name</name>
+      <email>you@example.com</email>
     </developer>
   </developers>
-
 
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-
     <jackson.version>2.15.2</jackson.version>
-
     <gpg.executable>gpg</gpg.executable>
-    <gpg.keyname>${env.GPG_KEY_ID}</gpg.keyname>
     <gpg.passphraseServerId>gpg.passphrase</gpg.passphraseServerId>
-
     <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
     <nexus-staging-maven-plugin.version>1.6.15</nexus-staging-maven-plugin.version>
   </properties>
-
 
   <dependencies>
     <dependency>
@@ -63,25 +57,13 @@
     </dependency>
   </dependencies>
 
-
   <distributionManagement>
     <repository>
       <id>github</id>
       <name>GitHub Packages</name>
       <url>https://maven.pkg.github.com/4211421036/pqcrypto</url>
     </repository>
-
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <name>OSSRH Release Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
   </distributionManagement>
-
 
   <build>
     <pluginManagement>
@@ -133,19 +115,16 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
       </plugin>
-
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
-
 
   <profiles>
     <profile>
@@ -155,18 +134,18 @@
           <name>!skipReleaseProfile</name>
         </property>
       </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-          </plugin>
-          <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
+
+      <distributionManagement>
+        <snapshotRepository>
+          <id>ossrh</id>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+          <id>ossrh</id>
+          <name>OSSRH Release Repository</name>
+          <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+      </distributionManagement>
     </profile>
   </profiles>
 
