@@ -212,12 +212,8 @@ function decryptAll(jsonPayload):
 ### Python (PyPI)
 
 ```bash
-pip install pqcrypto
+pip install laicrypto
 ````
-
-* **Package Name**: `pqcrypto`
-* **Version**: latest available on PyPI.
-* **GitHub Actions**: see `.github/workflows/python-publish.yml`.
 
 ### JavaScript (npm)
 
@@ -225,35 +221,17 @@ pip install pqcrypto
 npm install pqlaicrypto
 ```
 
-* **Package Name**: `pqlaicrypto`
-* Exposes same API as Python, but using BigInt.
-* Published to npm (registry: `https://registry.npmjs.org`).
-
 ### Ruby (RubyGems)
 
 ```bash
 gem install laicrypto
 ```
 
-* **Gem Name**: `laicrypto`
-* Wraps the core LAI primitives in a Ruby module.
-* Published on RubyGems.org.
-
 ### .NET (NuGet)
 
 ```xml
 <PackageReference Include="PQCrypto.Lai" Version="0.1.0" />
 ```
-
-* **Package ID**: `PQCrypto.Lai`
-* Target framework: `netstandard2.0` (compatible with .NET Core, .NET 5+, .NET Framework).
-* Published on GitHub Packages (NuGet feed) and nuget.org (`unlisted` until you make it public).
-* **Feed URL** (GitHub Packages):
-
-  ```
-  https://nuget.pkg.github.com/4211421036/index.json
-  ```
-* **GitHub Actions**: see `.github/workflows/nuget.yml`.
 
 ### Java (Maven Central / GitHub Packages)
 
@@ -264,17 +242,6 @@ gem install laicrypto
   <version>0.1.0</version>
 </dependency>
 ```
-
-* **GroupId**: `com.pelajaran.pqcrypto`
-* **ArtifactId**: `laicrypto`
-* **Version**: `0.1.0`
-* Published to GitHub Packages (Maven repo) at:
-
-  ```
-  https://maven.pkg.github.com/4211421036/pqcrypto
-  ```
-* You may later mirror to Maven Central.
-* **GitHub Actions**: see `.github/workflows/publish-maven.yml`.
 
 ---
 
