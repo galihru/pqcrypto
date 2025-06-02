@@ -14,19 +14,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2) Setup .NET SDK (misal .NET 6.0)
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.0.x'
 
-      # 3) Restore & build project
       - name: Restore, Build & Pack
         run: |
           cd laicrypto
@@ -34,7 +31,6 @@ jobs:
           dotnet build --configuration Release --no-restore
           dotnet pack --configuration Release --no-build -o ./nupkg
 
-      # 4) Publish ke GitHub Packages
       - name: Push to GitHub Packages (NuGet)
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
