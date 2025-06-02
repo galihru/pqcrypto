@@ -79,24 +79,27 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          # 1) Buat folder .gnupg jika belum ada
-          mkdir -p ~/.gnupg
-      
-          # 2) Impor private key dari secret
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-      
-          # 3) Pastikan key telah ter‐import dan ambil Key ID-nya
-          KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | head -n1 | cut -d':' -f5)
-          if [ -z "$KEY_ID" ]; then
-            echo "ERROR: GPG private key not found after import"
-            exit 1
-          fi
-      
-          # 4) Set trust level ke “ultimate” agar tidak ada prompt
-          echo -e "5\ny\n" | gpg --command-fd 0 --edit-key "$KEY_ID" trust
-      
-          # 5) (Optional) Cek daftar secret key untuk debugging
-          gpg --list-secret-keys
+              mkdir -p ~/.gnupg
+              # Nonaktifkan pinentry GUI agar bisa gunakan passphrase loopback:
+              echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          
+              # Hapus CRLF (Windows) jika ada, lalu import
+              printf '%s\n' "$GPG_PRIVATE_KEY" | sed 's/\r$//' | gpg --batch --import
+          
+              # Ambil long Key ID yang baru ter‐import
+              KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | head -n1 | cut -d':' -f5)
+              echo "Imported GPG key ID: $KEY_ID"
+          
+              if [ -z "$KEY_ID" ]; then
+                echo "ERROR: GPG private key gagal diimport"
+                exit 1
+              fi
+          
+              # Set trust level “ultimate”
+              printf "5\ny\n" | gpg --batch --yes --command-fd 0 --pinentry-mode loopback --edit-key "$KEY_ID" trust
+          
+              # Verifikasi bahwa secret key sudah terdaftar
+              gpg --list-secret-keys
 
 
       - name: Build & Prepare for OSSRH Deploy
