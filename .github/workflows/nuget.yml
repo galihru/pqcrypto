@@ -1,10 +1,5 @@
 name: Publish NuGet Package
 
-# Tambahkan permission agar GITHUB_TOKEN punya packages: write
-permissions:
-  contents: read      # akses kode
-  packages: write     # akses untuk meng‐upload paket
-
 on:
   push:
     branches:
@@ -13,6 +8,10 @@ on:
       - 'laicrypto/**'
       - '.github/workflows/nuget.yml'
       - 'README.md'
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   publish:
@@ -36,16 +35,15 @@ jobs:
           dotnet build --configuration Release --no-restore
           dotnet pack --configuration Release --no-build -o ./nupkg
 
-      - name: Push to GitHub Packages (NuGet)
+      - name: Push to NuGet.org
         env:
-          # Kita menggunakan GITHUB_TOKEN langsung, bukan PAT
-          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           cd laicrypto/nupkg
           for pkg in *.nupkg; do
-            echo "Pushing $pkg to GitHub Packages..."
+            echo "Pushing $pkg to NuGet.org..."
             dotnet nuget push "$pkg" \
-              --api-key "$GH_PACKAGES_TOKEN" \
-              --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+              --api-key "$NUGET_API_KEY" \
+              --source "https://api.nuget.org/v3/index.json" \
               --skip-duplicate
           done
