@@ -110,16 +110,16 @@ To compute $$\(T^k(P_0)\)$$ efficiently:
 ```
 
 function pow_T(P, k):
-result ← P
-base   ← P
-s      ← 1
-while k > 0:
-if (k mod 2) == 1:
-result ← T(result, s)
-base ← T(base, s)
-k    ← k >> 1
-s    ← s + 1
-return result
+   result ← P
+   base   ← P
+   s      ← 1
+   while k > 0:
+      if (k mod 2) == 1:
+         result ← T(result, s)
+         base ← T(base, s)
+         k    ← k >> 1
+         s    ← s + 1
+   return result
 
 ```
 
@@ -129,9 +129,9 @@ return result
 ```
 
 function keygen(p, a, P0):
-k ← random integer in [1, p−1]
-Q ← pow_T(P0, k)
-return (k, Q)
+   k ← random integer in [1, p−1]
+   Q ← pow_T(P0, k)
+   return (k, Q)
 
 ```
 
@@ -139,12 +139,12 @@ return (k, Q)
 ```
 
 function encrypt(m, Q, p, a, P0):
-r  ← random integer in [1, p−1]
-C1 ← pow_T(P0, r)
-Sr ← pow_T(Q, r)
-M  ← (m mod p, 0)
-C2 ← ((M.x + Sr.x) mod p, (M.y + Sr.y) mod p)
-return (C1, C2)
+   r  ← random integer in [1, p−1]
+   C1 ← pow_T(P0, r)
+   Sr ← pow_T(Q, r)
+   M  ← (m mod p, 0)
+   C2 ← ((M.x + Sr.x) mod p, (M.y + Sr.y) mod p)
+   return (C1, C2)
 
 ```
 
@@ -152,9 +152,9 @@ return (C1, C2)
 ```
 
 function decrypt(C1, C2, k, a, p):
-S   ← pow_T(C1, k)
-M.x ← (C2.x − S.x) mod p
-return M.x
+   S   ← pow_T(C1, k)
+   M.x ← (C2.x − S.x) mod p
+   return M.x
 
 ```
 
@@ -162,15 +162,15 @@ return M.x
 ```
 
 function decryptAll(jsonPayload):
-parse p, a, P0, k, blocks\[]
-for each block in blocks:
-(x1,y1) = block.C1
-(x2,y2) = block.C2
-r       = block.r
-M_int   = decrypt((x1,y1),(x2,y2),k,r,a,p)
-convert M_int into fixed-length big-endian B-byte chunk
-append to output byte buffer
-return outputBuffer
+   parse p, a, P0, k, blocks[]
+   for each block in blocks:
+      (x1,y1) = block.C1
+      (x2,y2) = block.C2
+      r       = block.r
+      M_int   = decrypt((x1,y1),(x2,y2),k,r,a,p)
+      convert M_int into fixed-length big-endian B-byte chunk
+      append to output byte buffer
+   return outputBuffer
 
 ````
 
