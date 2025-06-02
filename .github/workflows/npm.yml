@@ -75,18 +75,30 @@ jobs:
           java-version: '11'
           cache: 'maven'
 
-      - name: Import GPG key
-        # Pastikan Anda sudah menyimpan kunci privat GPG ASCII‐armored
-        # dan passphrase di Secrets: GPG_PRIVATE_KEY, GPG_PASSPHRASE
+      - name: Import GPG key & set trust
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          # Import private key ke gpg
+          # 1) Buat folder .gnupg jika belum ada
+          mkdir -p ~/.gnupg
+      
+          # 2) Impor private key dari secret
           echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          # Pastikan trust level: (gunakan keygrip atau uid)
-          KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | cut -d':' -f5)
-          echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key "$KEY_ID" trust
+      
+          # 3) Pastikan key telah ter‐import dan ambil Key ID-nya
+          KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | head -n1 | cut -d':' -f5)
+          if [ -z "$KEY_ID" ]; then
+            echo "ERROR: GPG private key not found after import"
+            exit 1
+          fi
+      
+          # 4) Set trust level ke “ultimate” agar tidak ada prompt
+          echo -e "5\ny\n" | gpg --command-fd 0 --edit-key "$KEY_ID" trust
+      
+          # 5) (Optional) Cek daftar secret key untuk debugging
+          gpg --list-secret-keys
+
 
       - name: Build & Prepare for OSSRH Deploy
         run: mvn --batch-mode clean verify
