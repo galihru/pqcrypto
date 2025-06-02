@@ -17,9 +17,4 @@
     <LicenseFile>LICENSE</LicenseFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Numerics" Version="4.3.0" />
-  </ItemGroup>
-  
 </Project>
