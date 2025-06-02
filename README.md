@@ -192,7 +192,7 @@ function decryptAll(jsonPayload):
    Separation of low‐level primitives (`H`, `sqrt_mod`, `T`) from high‐level API (`keygen`, `encrypt`, `decrypt`).
 
 4. **General & Optimized**  
-   - Fast branch for \(p\equiv3\pmod4\).  
+   - Fast branch for $$\(p\equiv3\pmod4\)$$.  
    - Full Tonelli–Shanks fallback for any odd prime.
 
 5. **Bulk JSON Decryption**  
