@@ -11,7 +11,7 @@ on:
     paths:
       - 'pom.xml'
       - 'src/**'
-      - '.github/workflows/maven.yml'
+      - '.github/workflows/maven'
 
 jobs:
   build-and-publish:
@@ -31,14 +31,12 @@ jobs:
           cache: 'maven'
 
       - name: Build & Test
-        run: |
-          mvn --batch-mode clean verify
+        run: mvn --batch-mode clean verify
 
       - name: Publish to GitHub Packages (Maven)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Create ~/.m2/settings.xml with server credentials
           mkdir -p ~/.m2
           cat <<EOF > ~/.m2/settings.xml
           <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
@@ -55,5 +53,4 @@ jobs:
           </settings>
           EOF
 
-          # Deploy to GitHub Packages
           mvn --batch-mode deploy -DskipTests --settings ~/.m2/settings.xml
