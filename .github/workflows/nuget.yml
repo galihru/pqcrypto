@@ -1,5 +1,9 @@
 name: Publish NuGet Package
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:
@@ -8,10 +12,6 @@ on:
       - 'laicrypto/**'
       - '.github/workflows/nuget.yml'
       - 'README.md'
-
-permissions:
-  contents: read
-  packages: write
 
 jobs:
   publish:
