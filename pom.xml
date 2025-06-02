@@ -11,7 +11,10 @@
   <version>0.1.0</version>
   <packaging>jar</packaging>
   <name>LAICrypto</name>
-  <description>LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.</description>
+  <description>
+    LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves 
+    over lemniscate lattices, offering resistance against quantum-capable adversaries.
+  </description>
   <url>https://github.com/4211421036/pqcrypto</url>
 
   <licenses>
@@ -22,16 +25,37 @@
     </license>
   </licenses>
 
+  <scm>
+    <connection>scm:git:git://github.com/4211421036/pqcrypto.git</connection>
+    <developerConnection>scm:git:ssh://github.com/4211421036/pqcrypto.git</developerConnection>
+    <url>https://github.com/4211421036/pqcrypto</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>4211421036</id>
+      <name>GALIH RIDHO UTOMO</name>
+      <email>g4lihru@students.unnes.ac.id</email>
+    </developer>
+  </developers>
+
+
   <properties>
-    <!-- Versi Java compiler -->
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <!-- Versi Jackson untuk JSON parsing -->
+
     <jackson.version>2.15.2</jackson.version>
+
+    <gpg.executable>gpg</gpg.executable>
+    <gpg.keyname>${env.GPG_KEY_ID}</gpg.keyname>
+    <gpg.passphraseServerId>gpg.passphrase</gpg.passphraseServerId>
+
+    <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+    <nexus-staging-maven-plugin.version>1.6.15</nexus-staging-maven-plugin.version>
   </properties>
 
+
   <dependencies>
-    <!-- Jackson Databind untuk JsonNode di decryptAll(...) -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
@@ -39,28 +63,111 @@
     </dependency>
   </dependencies>
 
-  <!-- Konfigurasi agar 'mvn deploy' meng-upload ke GitHub Packages Maven Registry -->
+
   <distributionManagement>
     <repository>
       <id>github</id>
       <name>GitHub Packages</name>
-      <!-- Sesuaikan dengan <OWNER>/<REPO> Anda -->
       <url>https://maven.pkg.github.com/4211421036/pqcrypto</url>
+    </repository>
+
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <name>OSSRH Release Repository</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
 
+
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version>
+          <configuration>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>${maven-gpg-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <passphraseServerId>${gpg.passphraseServerId}</passphraseServerId>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>${nexus-staging-maven-plugin.version}</version>
+          <extensions>true</extensions>
+          <configuration>
+            <serverId>ossrh</serverId>
+            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
-      <!-- Plugin untuk compile Java -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
-        <configuration>
-          <source>${maven.compiler.source}</source>
-          <target>${maven.compiler.target}</target>
-        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
+
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <activation>
+        <property>
+          <name>!skipReleaseProfile</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>
