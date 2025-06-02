@@ -11,18 +11,20 @@ on:
     paths:
       - 'pom.xml'
       - 'src/**'
-      - '.github/workflows/maven'
+      - '.github/workflows/maven.yml'
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # 1) Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2) Set up Java 11
       - name: Setup Java 11
         uses: actions/setup-java@v3
         with:
@@ -30,9 +32,11 @@ jobs:
           java-version: '11'
           cache: 'maven'
 
+      # 3) Build & Test
       - name: Build & Test
         run: mvn --batch-mode clean verify
 
+      # 4) Configure Maven settings and deploy to GitHub Packages
       - name: Publish to GitHub Packages (Maven)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
