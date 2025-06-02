@@ -37,7 +37,7 @@ jobs:
       # 4) Publish ke GitHub Packages
       - name: Push to GitHub Packages (NuGet)
         env:
-          NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NUGET_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
           cd laicrypto/nupkg
