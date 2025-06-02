@@ -29,7 +29,7 @@ jobs:
       # 3) Restore & build project
       - name: Restore, Build & Pack
         run: |
-          cd src/PQCrypto
+          cd src/laicrypto
           dotnet restore
           dotnet build --configuration Release --no-restore
           dotnet pack --configuration Release --no-build -o ./nupkg
