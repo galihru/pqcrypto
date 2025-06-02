@@ -24,28 +24,26 @@ namespace PQCrypto
                 tmp[i] = hash[hash.Length - 1 - i];
             }
             tmp[tmp.Length - 1] = 0x00;
-
             BigInteger hashBig = new BigInteger(tmp);
             return BigInteger.Remainder(hashBig, p);
         }
+
         public static BigInteger ModPow(BigInteger baseValue, BigInteger exp, BigInteger mod)
         {
             return BigInteger.ModPow(baseValue, exp, mod);
         }
+
         private static BigInteger LegendreSymbol(BigInteger a, BigInteger p)
         {
             return BigInteger.ModPow(a, (p - 1) / 2, p);
         }
+
         public static BigInteger? SqrtMod(BigInteger a_in, BigInteger p_in)
         {
             BigInteger a = ((a_in % p_in) + p_in) % p_in;
             if (a.IsZero) return 0;
-
             BigInteger ls = LegendreSymbol(a, p_in);
-            if (ls == p_in - 1) 
-            {
-                return null; // tidak ada akar
-            }
+            if (ls == p_in - 1) return null;
             if ((p_in % 4) == 3)
             {
                 return BigInteger.ModPow(a, (p_in + 1) / 4, p_in);
@@ -88,6 +86,7 @@ namespace PQCrypto
             }
             return r;
         }
+
         public static (BigInteger X, BigInteger Y) T((BigInteger X, BigInteger Y) point, BigInteger s, BigInteger a, BigInteger p)
         {
             BigInteger x = point.X;
@@ -104,29 +103,25 @@ namespace PQCrypto
             }
             return (xNew, yNew.Value);
         }
+
         public static BigInteger ModInverse(BigInteger value, BigInteger mod)
         {
             BigInteger a = value % mod;
             if (a < 0) a += mod;
             BigInteger m = mod;
             BigInteger m0 = m, y = 0, x = 1;
-
             if (m == 1) return 0;
-
             while (a > 1)
             {
                 BigInteger q = a / m;
                 BigInteger t = m;
-                m = a % m;
-                a = t;
-                t = y;
-                y = x - q * y;
-                x = t;
+                m = a % m; a = t;
+                t = y; y = x - q * y; x = t;
             }
-
             if (x < 0) x += m0;
             return x;
         }
+
         public static (BigInteger X, BigInteger Y) PowT((BigInteger X, BigInteger Y) P, BigInteger startS, int exp, BigInteger a, BigInteger p)
         {
             var result = P;
@@ -138,12 +133,14 @@ namespace PQCrypto
             }
             return result;
         }
+
         public static BigInteger DecryptBlock((BigInteger X, BigInteger Y) C1, (BigInteger X, BigInteger Y) C2, BigInteger k, BigInteger r, BigInteger a, BigInteger p)
         {
             var S = PowT(C1, r + 1, (int)k, a, p);
             BigInteger M = (C2.X - S.X + p) % p;
             return M;
         }
+
         public static byte[] DecryptAll(dynamic laiData)
         {
             BigInteger p = (BigInteger)laiData.p;
@@ -152,7 +149,6 @@ namespace PQCrypto
 
             int bitLen = (int)Math.Floor(BigInteger.Log(p, 2)) + 1;
             int B = (bitLen - 1) / 8;
-
             var blocks = (IEnumerable<dynamic>)laiData.blocks;
 
             using (var ms = new System.IO.MemoryStream())
@@ -166,8 +162,7 @@ namespace PQCrypto
                     BigInteger r = (BigInteger)blk.r;
 
                     var M_int = DecryptBlock((x1, y1), (x2, y2), k, r, a, p);
-
-                    byte[] mBytesLittle = M_int.ToByteArray(); 
+                    byte[] mBytesLittle = M_int.ToByteArray();
                     var mBytesLE = mBytesLittle;
                     if (mBytesLE.Length > 1 && mBytesLE[mBytesLE.Length - 1] == 0x00)
                     {
