@@ -40,7 +40,7 @@ jobs:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          cd src/PQCrypto/nupkg
+          cd laicrypto/nupkg
           for pkg in *.nupkg; do
             echo "Pushing $pkg to GitHub Packages..."
             dotnet nuget push "$pkg" \
