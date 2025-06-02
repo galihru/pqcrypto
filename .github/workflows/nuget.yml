@@ -1,0 +1,50 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/PQCrypto/**'
+      - '.github/workflows/nuget.yml'
+      - 'README.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2) Setup .NET SDK (misal .NET 6.0)
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      # 3) Restore & build project
+      - name: Restore, Build & Pack
+        run: |
+          cd src/PQCrypto
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          dotnet pack --configuration Release --no-build -o ./nupkg
+
+      # 4) Publish ke GitHub Packages
+      - name: Push to GitHub Packages (NuGet)
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          cd src/PQCrypto/nupkg
+          for pkg in *.nupkg; do
+            echo "Pushing $pkg to GitHub Packages..."
+            dotnet nuget push "$pkg" \
+              --api-key "$NUGET_AUTH_TOKEN" \
+              --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+              --skip-duplicate
+          done
