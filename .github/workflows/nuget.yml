@@ -1,5 +1,10 @@
 name: Publish NuGet Package
 
+# Tambahkan permission agar GITHUB_TOKEN punya packages: write
+permissions:
+  contents: read      # akses kode
+  packages: write     # akses untuk meng‐upload paket
+
 on:
   push:
     branches:
@@ -33,7 +38,7 @@ jobs:
 
       - name: Push to GitHub Packages (NuGet)
         env:
-          # Hanya satu token: GH_PACKAGES_TOKEN (GitHub PAT dengan scope write:packages)
+          # Kita menggunakan GITHUB_TOKEN langsung, bukan PAT
           GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd laicrypto/nupkg
