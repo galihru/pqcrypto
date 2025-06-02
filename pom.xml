@@ -23,12 +23,15 @@
   </licenses>
 
   <properties>
+    <!-- Versi Java compiler -->
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <!-- Versi Jackson untuk JSON parsing -->
     <jackson.version>2.15.2</jackson.version>
   </properties>
 
   <dependencies>
+    <!-- Jackson Databind untuk JsonNode di decryptAll(...) -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
@@ -36,16 +39,19 @@
     </dependency>
   </dependencies>
 
+  <!-- Konfigurasi agar 'mvn deploy' meng-upload ke GitHub Packages Maven Registry -->
   <distributionManagement>
     <repository>
       <id>github</id>
       <name>GitHub Packages</name>
+      <!-- Sesuaikan dengan <OWNER>/<REPO> Anda -->
       <url>https://maven.pkg.github.com/4211421036/pqcrypto</url>
     </repository>
   </distributionManagement>
 
   <build>
     <plugins>
+      <!-- Plugin untuk compile Java -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -55,6 +61,6 @@
           <target>${maven.compiler.target}</target>
         </configuration>
       </plugin>
-      plugins>
+    </plugins>
   </build>
 </project>
