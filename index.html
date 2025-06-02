@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PQCrypto - Post-Quantum LAI Encryption</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a3e;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+            --gradient-secondary: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, #6366f1 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, #8b5cf6 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, #06b6d4 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 2rem;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 8rem 2rem;
+            background: var(--bg-secondary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-secondary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary-color);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-primary);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Languages Section */
+        .languages {
+            padding: 8rem 2rem;
+        }
+
+        .languages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .language-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .language-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .language-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .language-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+        }
+
+        .language-logo {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 1rem;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Code Demo Section */
+        .demo {
+            padding: 8rem 2rem;
+            background: var(--bg-secondary);
+        }
+
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .code-block {
+            background: var(--bg-primary);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .code-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .code-dot:nth-child(1) { background: #ff5f57; }
+        .code-dot:nth-child(2) { background: #ffbd2e; }
+        .code-dot:nth-child(3) { background: #28ca42; }
+
+        .code-content {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .code-content .keyword { color: #ff79c6; }
+        .code-content .string { color: #f1fa8c; }
+        .code-content .number { color: #bd93f9; }
+        .code-content .comment { color: #6272a4; font-style: italic; }
+
+        /* Footer */
+        footer {
+            padding: 4rem 2rem 2rem;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .demo-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        /* Scroll Animations */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+        }
+
+        .scroll-reveal.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mathematical Formula Styling */
+        .formula {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+            margin: 1rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        /* Glassmorphism effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    
+    <header>
+        <nav>
+            <div class="logo">PQCrypto</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#languages">Languages</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#docs">Docs</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>Post-Quantum LAI Encryption</h1>
+                <p>A revolutionary multi-language implementation of Lemniscate-AGM Isogeny encryption, offering quantum-resistant security for the future of cryptography.</p>
+                <div class="cta-buttons">
+                    <a href="#demo" class="btn btn-primary">Get Started</a>
+                    <a href="#features" class="btn btn-secondary">Learn More</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features scroll-reveal">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Revolutionary Features</h2>
+                    <p>Built for the quantum era with mathematical precision and multi-language support</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon">🔐</div>
+                        <h3>Quantum-Resistant</h3>
+                        <p>Based on isogenies of elliptic curves over lemniscate lattices, providing conjectured resistance against quantum-capable adversaries.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Optimized Performance</h3>
+                        <p>Fast branch for p≡3(mod 4) and binary exponentiation for O(log k) complexity in LAI transformations.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>Multi-Language Support</h3>
+                        <p>Available in Python, JavaScript, Ruby, .NET, and Java with identical API semantics across all platforms.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon">🔬</div>
+                        <h3>Mathematically Precise</h3>
+                        <p>Every function corresponds exactly to mathematical formulas with hash-based seed functions and modular square roots.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon">📦</div>
+                        <h3>Pure Implementation</h3>
+                        <p>No native code dependencies, using only standard libraries for maximum compatibility and security.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Bulk Operations</h3>
+                        <p>Support for bulk JSON decryption and large ciphertext payloads for real-world applications.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="languages" class="languages scroll-reveal">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Multi-Platform Excellence</h2>
+                    <p>One cryptographic standard, multiple implementation languages</p>
+                </div>
+                <div class="languages-grid">
+                    <div class="language-card glass-card">
+                        <div class="language-logo">🐍</div>
+                        <h3>Python</h3>
+                        <p>pip install laicrypto</p>
+                        <div class="badge">PyPI</div>
+                    </div>
+                    <div class="language-card glass-card">
+                        <div class="language-logo">JS</div>
+                        <h3>JavaScript</h3>
+                        <p>npm install pqlaicrypto</p>
+                        <div class="badge">NPM</div>
+                    </div>
+                    <div class="language-card glass-card">
+                        <div class="language-logo">💎</div>
+                        <h3>Ruby</h3>
+                        <p>gem install laicrypto</p>
+                        <div class="badge">RubyGems</div>
+                    </div>
+                    <div class="language-card glass-card">
+                        <div class="language-logo">C#</div>
+                        <h3>.NET</h3>
+                        <p>PQCrypto.Lai</p>
+                        <div class="badge">NuGet</div>
+                    </div>
+                    <div class="language-card glass-card">
+                        <div class="language-logo">☕</div>
+                        <h3>Java</h3>
+                        <p>com.pelajaran.pqcrypto</p>
+                        <div class="badge">Maven</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="demo" class="demo scroll-reveal">
+            <div class="container">
+                <div class="section-header">
+                    <h2>See It In Action</h2>
+                    <p>Simple, elegant, and secure encryption in just a few lines of code</p>
+                </div>
+                <div class="demo-container">
+                    <div>
+                        <h3>Mathematical Foundation</h3>
+                        <p>LAI encryption is based on the mathematical transformation:</p>
+                        <div class="formula">
+T((x,y), s; a, p) = (
+  x' = (x + a + h) / 2 mod p,
+  y' = √(xy + h) mod p
+)
+
+where h = SHA256(x || y || s) mod p
+                        </div>
+                        <p>This provides quantum-resistant security through the difficulty of computing isogenies in elliptic curve cryptography.</p>
+                    </div>
+                    <div class="code-block glass-card">
+                        <div class="code-header">
+                            <div class="code-dots">
+                                <div class="code-dot"></div>
+                                <div class="code-dot"></div>
+                                <div class="code-dot"></div>
+                            </div>
+                            <span style="margin-left: 1rem; color: var(--text-secondary);">Python Example</span>
+                        </div>
+                        <div class="code-content">
+<span class="keyword">from</span> pqcrypto <span class="keyword">import</span> keygen, encrypt, decrypt
+
+<span class="comment"># Setup parameters</span>
+p = <span class="number">10007</span>
+a = <span class="number">5</span>
+P0 = (<span class="number">1</span>, <span class="number">0</span>)
+
+<span class="comment"># Generate keypair</span>
+private_k, public_Q = keygen(p, a, P0)
+
+<span class="comment"># Encrypt message</span>
+message = <span class="number">2024</span>
+C1, C2 = encrypt(message, public_Q, p, a, P0)
+
+<span class="comment"># Decrypt</span>
+recovered = decrypt(C1, C2, private_k, a, p)
+<span class="keyword">print</span>(<span class="string">f"Recovered: {recovered}"</span>)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="https://github.com/4211421036/pqcrypto">GitHub</a>
+                <a href="https://pypi.org/project/laicrypto/">PyPI</a>
+                <a href="https://www.npmjs.com/package/pqlaicrypto">NPM</a>
+                <a href="https://rubygems.org/gems/laicrypto">RubyGems</a>
+                <a href="https://www.nuget.org/packages/PQCrypto.Lai/">NuGet</a>
+            </div>
+            <p>&copy; 2025 PQCrypto. Licensed under MIT License.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
