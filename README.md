@@ -1,6 +1,6 @@
 # pqcrypto
 
-<img src="https://github.com/4211421036/pqcrypto/blob/main/logo.png" alt="pqcrypto Logo" width="200"/>
+<img src="https://github.com/4211421036/pqcrypto/blob/main/logo.png" alt="pqcrypto Logo"/>
 
 **Post-Quantum Lemniscate-AGM Isogeny (LAI) Encryption**
 
