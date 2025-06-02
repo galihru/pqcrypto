@@ -7,37 +7,20 @@ import java.security.SecureRandom;
 import java.util.Iterator;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * Post-Quantum Lemniscate-AGM Isogeny (LAI) Encryption in Java.
- *
- * Implements:
- *   - Hash-based seed function H(x,y,s) via SHA-256 mod p
- *   - Modular square root (Tonelli–Shanks)
- *   - LAI transform T
- *   - Binary exponentiation of T (PowT)
- *   - KeyGen, Encrypt, Decrypt
- *
- * Requires: Jackson Databind (com.fasterxml.jackson.databind.JsonNode).
- */
 public class LaiCrypto {
-
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public static BigInteger H(BigInteger x, BigInteger y, BigInteger s, BigInteger p) {
         try {
             MessageDigest sha = MessageDigest.getInstance("SHA-256");
-            // Big-endian bytes
             byte[] xBytes = toFixedLength(x);
             byte[] yBytes = toFixedLength(y);
             byte[] sBytes = toFixedLength(s);
-
             sha.update(xBytes);
             sha.update(yBytes);
             sha.update(sBytes);
             byte[] digest = sha.digest();
-
             byte[] extended = new byte[digest.length + 1];
             extended[0] = 0x00;
             System.arraycopy(digest, 0, extended, 1, digest.length);
@@ -52,9 +35,7 @@ public class LaiCrypto {
         a = a.mod(p);
         if (a.equals(BigInteger.ZERO)) return BigInteger.ZERO;
         BigInteger ls = a.modPow(p.subtract(BigInteger.ONE).divide(BigInteger.valueOf(2)), p);
-        if (ls.equals(p.subtract(BigInteger.ONE))) {
-            return null;
-        }
+        if (ls.equals(p.subtract(BigInteger.ONE))) return null;
         if (p.testBit(1)) {
             return a.modPow(p.add(BigInteger.ONE).divide(BigInteger.valueOf(4)), p);
         }
@@ -73,9 +54,8 @@ public class LaiCrypto {
         BigInteger c = z.modPow(q, p);
         BigInteger t = a.modPow(q, p);
         BigInteger r = a.modPow(q.add(BigInteger.ONE).divide(BigInteger.valueOf(2)), p);
-
         while (!t.equals(BigInteger.ONE)) {
-            BigInteger t2i = t; 
+            BigInteger t2i = t;
             int i = 0;
             for (; i < m.intValue(); i++) {
                 t2i = t2i.modPow(BigInteger.TWO, p);
@@ -95,8 +75,7 @@ public class LaiCrypto {
     }
 
     public static Point T(Point P, BigInteger s, BigInteger a, BigInteger p) {
-        BigInteger x = P.x;
-        BigInteger y = P.y;
+        BigInteger x = P.x, y = P.y;
         BigInteger h = H(x, y, s, p);
         BigInteger inv2 = modInverse(BigInteger.valueOf(2), p);
         BigInteger xNew = x.add(a).add(h).multiply(inv2).mod(p);
@@ -104,7 +83,7 @@ public class LaiCrypto {
         BigInteger yNew = sqrtMod(y_sq, p);
         if (yNew == null) {
             throw new IllegalStateException(
-                String.format("No sqrt exists for %s mod %s", y_sq.toString(), p.toString()));
+                String.format("No sqrt for %s mod %s", y_sq.toString(), p.toString()));
         }
         return new Point(xNew, yNew);
     }
@@ -160,14 +139,17 @@ public class LaiCrypto {
         BigInteger p = new BigInteger(laiData.get("p").asText());
         BigInteger a = new BigInteger(laiData.get("a").asText());
         JsonNode P0node = laiData.get("P0");
-        Point P0 = new Point(new BigInteger(P0node.get(0).asText()), new BigInteger(P0node.get(1).asText()));
+        Point P0 = new Point(
+            new BigInteger(P0node.get(0).asText()),
+            new BigInteger(P0node.get(1).asText())
+        );
         BigInteger k = new BigInteger(laiData.get("k").asText());
         JsonNode blocks = laiData.get("blocks");
 
         int bitLen = p.bitLength();
         int B = (bitLen - 1) / 8;
         if (B < 1) {
-            throw new IllegalArgumentException("Prime p too small to hold any byte.");
+            throw new IllegalArgumentException("Prime p too small for any byte.");
         }
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
@@ -179,13 +161,13 @@ public class LaiCrypto {
             BigInteger y1 = new BigInteger(C1n.get(1).asText());
             BigInteger x2 = new BigInteger(C2n.get(0).asText());
             BigInteger y2 = new BigInteger(C2n.get(1).asText());
-            BigInteger r  = new BigInteger(blk.get("r").asText());
+            BigInteger rBlock = new BigInteger(blk.get("r").asText());
 
             Point C1 = new Point(x1, y1);
             Point C2 = new Point(x2, y2);
-            BigInteger M_int = decrypt(C1, C2, k, r, a, p);
+            BigInteger M_int = decrypt(C1, C2, k, rBlock, a, p);
 
-            byte[] rawLE = M_int.toByteArray(); 
+            byte[] rawLE = M_int.toByteArray();
             if (rawLE.length > 1 && rawLE[rawLE.length - 1] == 0x00) {
                 byte[] tmp = new byte[rawLE.length - 1];
                 System.arraycopy(rawLE, 0, tmp, 0, tmp.length);
@@ -193,12 +175,12 @@ public class LaiCrypto {
             }
             if (rawLE.length > B) {
                 throw new IllegalStateException(
-                    String.format("Integer block %s exceeds modulus size (rawLE length %d > B %d).",
-                                  M_int.toString(), rawLE.length, B));
+                    String.format("Integer block %s too large (length %d > %d).",
+                                  M_int.toString(), rawLE.length, B)
+                );
             }
             byte[] paddedLE = new byte[B];
             System.arraycopy(rawLE, 0, paddedLE, 0, rawLE.length);
-            // Reverse to big-endian
             for (int i = 0; i < B/2; i++) {
                 byte tmp = paddedLE[i];
                 paddedLE[i] = paddedLE[B - 1 - i];
@@ -206,14 +188,12 @@ public class LaiCrypto {
             }
             baos.writeBytes(paddedLE);
         }
-
         return baos.toByteArray();
     }
 
     private static byte[] toFixedLength(BigInteger x) {
         byte[] raw = x.toByteArray();
-        if (raw[0] == 0x00 && raw.length > 1) {
-            // strip leading zero if present
+        if (raw.length > 1 && raw[0] == 0x00) {
             byte[] tmp = new byte[raw.length - 1];
             System.arraycopy(raw, 1, tmp, 0, tmp.length);
             raw = tmp;
@@ -221,7 +201,6 @@ public class LaiCrypto {
         return raw;
     }
 
-    // Simple container classes
     public static class Point {
         public final BigInteger x, y;
         public Point(BigInteger x, BigInteger y) {
@@ -243,7 +222,7 @@ public class LaiCrypto {
         public Ciphertext(Point C1, Point C2, BigInteger r) {
             this.C1 = C1;
             this.C2 = C2;
-            this.r  = r;
+            this.r = r;
         }
     }
 
@@ -252,19 +231,16 @@ public class LaiCrypto {
         BigInteger a = BigInteger.valueOf(5);
         Point P0 = new Point(BigInteger.ONE, BigInteger.ZERO);
 
-        // Key generation
         KeyPair kp = keyGen(p, a, P0);
         System.out.println("Private k: " + kp.k);
         System.out.println("Public Q: (" + kp.Q.x + ", " + kp.Q.y + ")");
 
-        // Encrypt an integer
         BigInteger message = BigInteger.valueOf(2024);
         Ciphertext ct = encrypt(message, kp.Q, p, a, P0);
         System.out.println("C1: (" + ct.C1.x + ", " + ct.C1.y + ")");
         System.out.println("C2: (" + ct.C2.x + ", " + ct.C2.y + ")");
         System.out.println("r:  " + ct.r);
 
-        // Decrypt
         BigInteger recovered = decrypt(ct.C1, ct.C2, kp.k, ct.r, a, p);
         System.out.println("Recovered: " + recovered);
         if (!recovered.equals(message)) {
