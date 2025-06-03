@@ -225,66 +225,38 @@ async function decrypt_all_text_js(laiData) {
  * store the result in localStorage, and return both plaintext and duration.
  *
  * Returns: Promise<{ text: String, durationMs: number }>
- *   - text: the decrypted plaintext (UTF-8)
- *   - durationMs: time elapsed in milliseconds (0 if retrieved from cache)
  */
 async function getDecryptedOrCachedWithTiming(laiData, storageKey) {
-  // Attempt to retrieve from localStorage
   const cachedText = localStorage.getItem(storageKey);
   if (cachedText !== null) {
-    console.info(`[Cache] Retrieved decrypted text from localStorage (0 ms). Key = ${storageKey}`);
+    console.info(`[Cache] Using cached plaintext (0 ms). Key="${storageKey}"`);
     return { text: cachedText, durationMs: 0 };
   }
 
-  // If not cached, measure decryption time
-  console.info(`[Cache] No cached plaintext found under key = ${storageKey}. Starting full decryption…`);
+  console.info(`[Cache] No cache, performing decryption. Key="${storageKey}"`);
   const t0 = performance.now();
+  const decrypted = await decrypt_all_text_js(laiData);
+  const t1 = performance.now();
+  const elapsed = t1 - t0;
+
   try {
-    const decrypted = await decrypt_all_text_js(laiData);
-    const t1 = performance.now();
-    const elapsed = t1 - t0;
-
-    // Store decrypted plaintext in localStorage
-    try {
-      localStorage.setItem(storageKey, decrypted);
-      console.info(`[Cache] Stored decrypted text into localStorage under key = '${storageKey}'.`);
-      // Verify storage
-      const verify = localStorage.getItem(storageKey);
-      if (verify === null) {
-        console.warn(`[Cache] Warning: after setItem, getItem('${storageKey}') is still null!`);
-      } else {
-        console.info(`[Cache] Verification: getItem('${storageKey}') succeeded.`);
-      }
-    } catch (storageError) {
-      console.error("[Cache] localStorage.setItem error:", storageError);
-    }
-
-    console.info(`[Timing] Decryption completed in ${elapsed.toFixed(2)} ms.`);
-    return { text: decrypted, durationMs: elapsed };
-  } catch (error) {
-    console.error("[Decryption] Failed:", error);
-    throw error;
+    localStorage.setItem(storageKey, decrypted);
+    console.info(`[Cache] Stored plaintext under "${storageKey}". Verification:`, 
+      localStorage.getItem(storageKey) !== null);
+  } catch (e) {
+    console.error("[Cache] Failed to store in localStorage:", e);
   }
+
+  console.info(`[Timing] Decryption took ${elapsed.toFixed(2)} ms.`);
+  return { text: decrypted, durationMs: elapsed };
 }
 
 /**
  * fetchAndDecrypt()
  *
- * Fetches `laiData.json` from the same directory, decrypts or retrieves from cache,
- * then writes the results into an element with ID "output".
- *
- * - Expects a JSON file at "./laiData.json" with the structure:
- *     {
- *       "p": "<prime modulus as string>",
- *       "a": "<curve parameter as string>",
- *       "k": "<iteration count as string>",
- *       "blocks": [
- *         { "C1": ["<x>", "<y>"], "C2": ["<x>", "<y>"], "r": "<random index>" },
- *         … more blocks …
- *       ]
- *     }
- *
- * - Writes decrypted plaintext and timing into <pre id="output">…</pre>.
+ * 1) Fetches "script.min.json" from the same directory.
+ * 2) Attempts to retrieve from cache; if not present, decrypts.
+ * 3) Logs decrypted text and timing in console.
  */
 async function fetchAndDecrypt() {
   let laiData;
@@ -295,19 +267,22 @@ async function fetchAndDecrypt() {
     }
     laiData = await response.json();
   } catch (fetchError) {
-    console.error("[fetchAndDecrypt] Failed to fetch script.min.json:", fetchError);
+    console.error("[fetchAndDecrypt] Unable to fetch script.min.json:", fetchError);
     return;
   }
 
   const cacheKey = "PQCrypto";
   try {
     const result = await getDecryptedOrCachedWithTiming(laiData, cacheKey);
+    // Log the plaintext once—no further action needed.
+    console.log("[Result] Decrypted plaintext:\n", result.text);
+    console.log("[Result] Decryption time (ms):", result.durationMs);
   } catch (decryptError) {
-    console.error("[fetchAndDecrypt] Decryption error:", decryptError);
+    console.error("[fetchAndDecrypt] Decryption failed:", decryptError);
   }
 }
 
-// When DOM is fully loaded, automatically invoke fetchAndDecrypt().
+// Automatically invoke when the HTML includes this script (no inline HTML code required).
 document.addEventListener("DOMContentLoaded", fetchAndDecrypt);
 
 // Expose public functions if needed elsewhere
