@@ -1,0 +1,70 @@
+name: Re-hash & Inject Decryptor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  rehahs-and-inject:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
+      - name: Identify current decryptor file
+        id: identify
+        run: |
+          # Jika decryptor.js masih ada, gunakan itu sebagai sumber
+          if [ -f decryptor.js ]; then
+            echo "source_file=decryptor.js" >> $GITHUB_OUTPUT
+          else
+            # Cari file .js yang namanya berupa 64 heksadesimal (hash)
+            FOUND=$(ls *.js 2>/dev/null | grep -E '^[0-9a-f]{64}\.js$' | head -n1)
+            if [ -n "$FOUND" ]; then
+              echo "source_file=$FOUND" >> $GITHUB_OUTPUT
+            else
+              echo "::error ::No decryptor file found (neither decryptor.js nor a 64-hex.js)"
+              exit 1
+            fi
+          fi
+
+      - name: Compute new SHA-256 hash
+        id: hashfile
+        run: |
+          SRC=${{ steps.identify.outputs.source_file }}
+          # Hitung hash penuh dari isi file
+          NEW_HASH=$(sha256sum "$SRC" | awk '{print $1}')
+          echo "old_name=$SRC" >> $GITHUB_OUTPUT
+          echo "new_name=${NEW_HASH}.js" >> $GITHUB_OUTPUT
+
+      - name: Rename to new hash
+        run: |
+          OLD=${{ steps.hashfile.outputs.old_name }}
+          NEW=${{ steps.hashfile.outputs.new_name }}
+          # Jika nama baru sama dengan yang lama, tidak perlu rename
+          if [ "$OLD" != "$NEW" ]; then
+            git mv "$OLD" "$NEW"
+          else
+            echo "No rename needed (filename already matches content hash)."
+          fi
+
+      - name: Update HTML <script> reference
+        run: |
+          OLD=${{ steps.hashfile.outputs.old_name }}
+          NEW=${{ steps.hashfile.outputs.new_name }}
+          # Update tag <script src="..."></script> yang mengandung nama lama ke nama baru
+          sed -i -E "s|<script src=\"[^\"]*${OLD}\"></script>|<script src=\"${NEW}\"></script>|g" index.html
+
+      - name: Commit & Push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html "${{ steps.hashfile.outputs.new_name }}"
+          git commit -m "Re-hash ${{
+            steps.hashfile.outputs.old_name }} → ${{ steps.hashfile.outputs.new_name }} and update HTML" || echo "No changes to commit"
+          git push
