@@ -1,16 +1,17 @@
-name: Encrypt & Decrypt script.js with LAICrypto
+name: Encrypt & Decrypt script.min.js with LAICrypto
 
 on:
   push:
     paths:
-      - 'script.js'
-      - '.github/workflows/lai.yml'
+      - 'script.min.js'
+      - '.github/workflows/encrypt-decrypt-js.yml'
 
 jobs:
   encrypt_and_verify:
     runs-on: ubuntu-latest
+
     steps:
-      # 1. Checkout the repository so that script.js is available
+      # 1. Checkout the repository so that script.min.js is available
       - name: Check out code
         uses: actions/checkout@v4
 
@@ -20,27 +21,29 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. Install the pqcrypto module from PyPI
-      - name: Install pqcrypto
+      # 3. Install the laicrypto module from PyPI
+      - name: Install laicrypto
         run: |
           python -m pip install --upgrade pip
           pip install laicrypto
 
-      # 4. Encrypt script.js → ciphertext.json and then decrypt to verify
+      # 4. Encrypt script.min.js → ciphertext.json and then decrypt to verify
       - name: Encrypt & Decrypt script.min.js
         run: |
           python - << 'EOF'
           import math
           import json
           import os
-          from pqcrypto import keygen, encrypt, decrypt
           
-          # 1) LAI parameters (must match what your module expects)
+          # 1) Import from laicrypto
+          from laicrypto import keygen, encrypt, decrypt
+          
+          # 2) LAI parameters (must match what your module expects)
           p = 10007
           a = 5
           P0 = (1, 0)
           
-          # 2) Helpers to split file bytes into int blocks < p
+          # 3) Helpers to split file bytes into int blocks < p
           def max_block_size(p: int) -> int:
               bit_len = p.bit_length()
               return (bit_len - 1) // 8
@@ -61,27 +64,28 @@ jobs:
                   blocks.append(m_int)
               return blocks
           
-          # 3) Encrypt all integer blocks of script.js
+          # 4) Encrypt all integer blocks of script.min.js
           input_js = "script.min.js"
           if not os.path.exists(input_js):
               raise FileNotFoundError(f"Cannot find {input_js} in the repository root.")
           
-          # 3.1 Generate LAI keypair
+          # 4.1) Generate LAI keypair
           private_k, public_Q = keygen(p, a, P0)
           
-          # 3.2 Split script.js into integer blocks
+          # 4.2) Split script.min.js into integer blocks
           m_blocks = file_to_int_blocks(input_js, p)
           
           ciphertext_blocks = []
           for m_int in m_blocks:
-              C1, C2, r = encrypt(m_int, public_Q, p, a, P0)
+              # encrypt now expects six arguments: (m_int, public_Q, private_k, p, a, P0)
+              C1, C2, r = encrypt(m_int, public_Q, private_k, p, a, P0)
               ciphertext_blocks.append({
                   "C1": [C1[0], C1[1]],
                   "C2": [C2[0], C2[1]],
                   "r": r
               })
           
-          # 3.3 Write ciphertext JSON
+          # 4.3) Write ciphertext JSON
           output_json = "ciphertext.json"
           result = {
               "p": p,
@@ -96,7 +100,7 @@ jobs:
           
           print(f"✅ Encryption complete, wrote {output_json}")
           
-          # 4) Decrypt “ciphertext.json” back into raw bytes and compare to script.js
+          # 5) Decrypt “ciphertext.json” back into raw bytes and compare to script.min.js
           with open(output_json, "r", encoding="utf-8") as fin:
               loaded = json.load(fin)
           
@@ -105,14 +109,14 @@ jobs:
               x1, y1 = blk["C1"]
               x2, y2 = blk["C2"]
               r_val = blk["r"]
+              # decrypt now expects five arguments: (C1, C2, private_k, r, a, p)
               m_int = decrypt((x1, y1), (x2, y2), loaded["k"], r_val, loaded["a"], loaded["p"])
               decrypted_int_blocks.append(m_int)
           
-          # Reassemble bytes from decrypted integer blocks
+          # 6) Reassemble bytes from decrypted integer blocks
           B = max_block_size(loaded["p"])
           all_bytes = bytearray()
           for m_int in decrypted_int_blocks:
-              # Convert each m_int back to big-endian B‐byte chunk (padding with leading zeros)
               if m_int < 0 or m_int >= loaded["p"]:
                   raise ValueError(f"Decrypted integer out of range: {m_int}")
               if m_int == 0:
@@ -120,21 +124,20 @@ jobs:
               else:
                   byte_len = math.ceil(m_int.bit_length() / 8)
                   chunk = m_int.to_bytes(byte_len, byteorder="big")
-              # Now pad/truncate chunk to exactly B bytes (big-endian → pad on left)
               if len(chunk) > B:
                   raise ValueError(f"Block at integer {m_int} has length > B")
               chunk = chunk.rjust(B, b"\x00")
               all_bytes.extend(chunk)
           
-          # Read original file
+          # 7) Read original file
           with open(input_js, "rb") as fin_js:
               original_bytes = fin_js.read()
-          # Remove trailing zero‐padding that may have been introduced
-          # The last decrypted chunk might contain extra zeros if original length % B != 0
+          
+          # Remove any zero‐padding from the last block
           decrypted_bytes = bytes(all_bytes[: len(original_bytes)])
           
           if decrypted_bytes != original_bytes:
-              raise RuntimeError("❌ Decryption mismatch: decrypted content != original script.js")
+              raise RuntimeError("❌ Decryption mismatch: decrypted content != original script.min.js")
           
-          print("✅ Decryption successful: plaintext matches script.js exactly")
+          print("✅ Decryption successful: plaintext matches script.min.js exactly")
           EOF
