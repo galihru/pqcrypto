@@ -498,6 +498,26 @@
             margin: 0.25rem;
         }
 
+        /* Smooth transition for code content */
+        #code-content {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Language card active state */
+        .language-card.active {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .language-card.active::before {
+            transform: scaleX(1);
+        }
+
+        .language-card {
+            cursor: pointer;
+        }
+
         /* Glassmorphism effect */
         .glass-card {
             background: rgba(255, 255, 255, 0.05);
@@ -514,9 +534,11 @@
         <nav>
             <div class="logo">PQCrypto</div>
             <ul class="nav-links">
-                <li><a href="https://github.com/4211421036?tab=packages&repo_name=pqcrypto">Package GitHub</a></li>
-                <li><a href="https://github/com/4211421036/pqcrypto">GitHub</a></li>
-                <li><a href="https://github.com/4211421036/pqcrypto/wiki">Wiki</a></li>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#languages">Languages</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#docs">Docs</a></li>
             </ul>
         </nav>
     </header>
@@ -581,31 +603,31 @@
                     <p>One cryptographic standard, multiple implementation languages</p>
                 </div>
                 <div class="languages-grid">
-                    <div class="language-card glass-card">
+                    <div class="language-card glass-card" onclick="showCodeExample('python')">
                         <div class="language-logo">🐍</div>
                         <h3>Python</h3>
                         <p>pip install laicrypto</p>
                         <div class="badge">PyPI</div>
                     </div>
-                    <div class="language-card glass-card">
+                    <div class="language-card glass-card" onclick="showCodeExample('javascript')">
                         <div class="language-logo">JS</div>
                         <h3>JavaScript</h3>
                         <p>npm install pqlaicrypto</p>
                         <div class="badge">NPM</div>
                     </div>
-                    <div class="language-card glass-card">
+                    <div class="language-card glass-card" onclick="showCodeExample('ruby')">
                         <div class="language-logo">💎</div>
                         <h3>Ruby</h3>
                         <p>gem install laicrypto</p>
                         <div class="badge">RubyGems</div>
                     </div>
-                    <div class="language-card glass-card">
+                    <div class="language-card glass-card" onclick="showCodeExample('csharp')">
                         <div class="language-logo">C#</div>
                         <h3>.NET</h3>
                         <p>PQCrypto.Lai</p>
                         <div class="badge">NuGet</div>
                     </div>
-                    <div class="language-card glass-card">
+                    <div class="language-card glass-card" onclick="showCodeExample('java')">
                         <div class="language-logo">☕</div>
                         <h3>Java</h3>
                         <p>com.pelajaran.pqcrypto</p>
@@ -642,9 +664,9 @@ where h = SHA256(x || y || s) mod p
                                 <div class="code-dot"></div>
                                 <div class="code-dot"></div>
                             </div>
-                            <span style="margin-left: 1rem; color: var(--text-secondary);">Python Example</span>
+                            <span id="code-language" style="margin-left: 1rem; color: var(--text-secondary);">Python Example</span>
                         </div>
-                        <div class="code-content">
+                        <div id="code-content" class="code-content">
 <span class="keyword">from</span> pqcrypto <span class="keyword">import</span> keygen, encrypt, decrypt
 
 <span class="comment"># Setup parameters</span>
@@ -678,10 +700,10 @@ recovered = decrypt(C1, C2, private_k, a, p)
                 <a href="https://rubygems.org/gems/laicrypto">RubyGems</a>
                 <a href="https://www.nuget.org/packages/PQCrypto.Lai/">NuGet</a>
             </div>
-            <p>&copy; 2025 PQCrypto. Licensed under MIT License.</p>
+            <p>&copy; 2024 PQCrypto. Licensed under MIT License.</p>
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.min.js"></script>
 </body>
 </html>
