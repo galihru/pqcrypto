@@ -36,14 +36,15 @@ jobs:
           OLD_HASHED=$(ls *.js 2>/dev/null | grep -E '^[0-9a-f]{64}\.js$' | head -n1 || echo "")
           echo "old_hashed=$OLD_HASHED" >> $GITHUB_OUTPUT
 
-      - name: Minify original decryptor.js
+      - name: Minify the original decryptor source
         id: minify
         run: |
-          if [ ! -f decryptor.js ]; then
-            echo "Error: decryptor.js not found." >&2
+          SRC="decryptor.orig.js"
+          if [ ! -f "$SRC" ]; then
+            echo "Error: $SRC not found." >&2
             exit 1
           fi
-          npx terser decryptor.js -c -m -o temp.min.js
+          npx terser "$SRC" -c -m -o temp.min.js
 
       - name: Compute SHA-256 hash of minified code
         id: hash_minified
@@ -66,8 +67,9 @@ jobs:
       - name: Update HTML to reference the new hashed filename
         run: |
           NEW_HASH=${{ steps.hash_minified.outputs.new_hash }}
+          # Ganti src="decryptor.orig.js" atau src="<oldhash>.js" → src="<newhash>.js"
           sed -i -E \
-            "s|<script src=\"[0-9a-f]{64}\.js\"></script>|<script src=\"${NEW_HASH}.js\"></script>|g" \
+            "s|<script src=\"([0-9a-f]{64}\.js|decryptor\.orig\.js)\"></script>|<script src=\"${NEW_HASH}.js\"></script>|g" \
             index.html
 
       - name: Commit & Push changes
@@ -75,10 +77,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html "${{ steps.hash_minified.outputs.new_hash }}.js"
-          # Hapus file lama hanya jika ditemukan
           OLD=${{ steps.find_old.outputs.old_hashed }}
           if [ -n "$OLD" ]; then
             git add -u
           fi
-          git commit -m "Minify & rename → ${{ steps.hash_minified.outputs.new_hash }}.js, update HTML"
+          git commit -m "Minify decryptor.orig.js → ${{ steps.hash_minified.outputs.new_hash }}.js, update HTML"
           git push
