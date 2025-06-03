@@ -714,13 +714,11 @@ recovered = decrypt(C1, C2, private_k, a, p)
             <p>&copy; 2024 PQCrypto. Licensed under MIT License.</p>
         </div>
     </footer>
-  <!-- … rest of page content (features, demo, footer, etc.) … -->
-
+  
    <script src="dc.js"></script>
   <script>
-  window.addEventListener("load", async () => {
+    window.addEventListener("load", async () => {
       try {
-        // 2.1. Ambil file JSON dari server (atau local)
         const response = await fetch("script.min.json");
         if (!response.ok) {
           throw new Error(`HTTP ${response.status} saat fetch script.min.json`);
@@ -730,10 +728,10 @@ recovered = decrypt(C1, C2, private_k, a, p)
         console.log("=== Lai Data (dari script.min.json) ===");
         console.log(laiData);
 
-        // 2.2. Panggil decrypt_all_text_js() dari decryptor.js
         const decryptedJS = await decrypt_all_text_js(laiData);
-        
-        // 2.3. Sisipkan hasil dekripsi sebagai <script> baru agar browser menjalankannya
+        console.log("=== Decrypted JS Code ===");
+        console.log(decryptedJS);
+
         const scriptEl = document.createElement("script");
         scriptEl.type = "application/javascript";
         scriptEl.text = decryptedJS;
