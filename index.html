@@ -714,10 +714,38 @@ recovered = decrypt(C1, C2, private_k, a, p)
             <p>&copy; 2024 PQCrypto. Licensed under MIT License.</p>
         </div>
     </footer>
-    <div id="loading-overlay">
-        Decrypting and loading interactive JS…
-    </div>
-  
-    <script type="module" src="dc.js"></script>
+    <script src="decryptor.js"></script>
+
+  <!-- 2. Setelah halaman load, fetch ciphertext.json lalu panggil fungsi decrypt -->
+  <script>
+    window.addEventListener("load", async () => {
+      try {
+        // 2.1. Ambil file JSON dari server (atau local)
+        const response = await fetch("script.min.json");
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} saat fetch script.min.json`);
+        }
+        const laiData = await response.json();
+
+        console.log("=== Lai Data (dari hello_ciphertext.json) ===");
+        console.log(laiData);
+
+        // 2.2. Panggil decrypt_all_text_js() dari decryptor.js
+        const decryptedJS = await decrypt_all_text_js(laiData);
+        console.log("=== Decrypted JS Code ===");
+        console.log(decryptedJS);
+
+        // 2.3. Sisipkan hasil dekripsi sebagai <script> baru agar browser menjalankannya
+        const scriptEl = document.createElement("script");
+        scriptEl.type = "application/javascript";
+        scriptEl.text = decryptedJS;
+        document.body.appendChild(scriptEl);
+
+        console.log("→ Decrypted JS telah disisipkan dan dijalankan.");
+      } catch (err) {
+        console.error("Gagal decrypt:", err);
+      }
+    });
+  </script>
 </body>
 </html>
