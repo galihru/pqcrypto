@@ -1,7 +1,7 @@
 // decryptor_with_cache_and_timing.js
 
 /**
- * Helper: convert ArrayBuffer → Hex string
+ * Helper: convert ArrayBuffer → Hexadecimal string
  */
 function bytesToHex(bytes) {
   return Array.from(bytes)
@@ -10,14 +10,14 @@ function bytesToHex(bytes) {
 }
 
 /**
- * SHA-256-based seed H(x,y,s) mod p
- *     H(x,y,s) = SHA256("x|y|s") mod p
- * Kembalian: Promise<BigInt>
+ * SHA-256-based seed function H(x, y, s) mod p:
+ *     H(x, y, s) = SHA256("x|y|s") mod p
+ * Returns: Promise<BigInt>
  */
 async function H_js(x, y, s, p) {
-  const str = `${x}|${y}|${s}`;
-  const enc = new TextEncoder();
-  const data = enc.encode(str);
+  const inputString = `${x}|${y}|${s}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(inputString);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = new Uint8Array(hashBuffer);
   const hashHex = bytesToHex(hashArray);
@@ -26,41 +26,49 @@ async function H_js(x, y, s, p) {
 }
 
 /**
- * Modular exponentiation: base^exp mod mod (BigInt)
+ * Modular exponentiation: base^exp mod modulus (all BigInt).
+ * Returns: BigInt
  */
-function modPow(base, exp, mod) {
+function modPow(base, exp, modulus) {
   let result = 1n;
-  base = base % mod;
+  base = base % modulus;
   while (exp > 0n) {
-    if (exp & 1n) result = (result * base) % mod;
-    base = (base * base) % mod;
+    if (exp & 1n) {
+      result = (result * base) % modulus;
+    }
+    base = (base * base) % modulus;
     exp >>= 1n;
   }
   return result;
 }
 
 /**
- * Tonelli–Shanks: sqrt_mod(a, p)
- * Jika a bukan kuadrat residu mod p, kembalikan null.
- * Kembalian: BigInt (akar) atau null
+ * Compute the Legendre symbol (a | p) = a^((p-1)/2) mod p.
+ * Returns: BigInt
  */
 function legendreSymbol(a, p) {
   return modPow(a, (p - 1n) / 2n, p);
 }
 
+/**
+ * Tonelli–Shanks algorithm for modular square root: sqrt_mod(a, p).
+ * If a is not a quadratic residue modulo p, returns null.
+ * Returns: BigInt (square root) or null.
+ */
 function sqrt_mod_js(a_in, p_in) {
   const a = ((a_in % p_in) + p_in) % p_in;
   if (a === 0n) return 0n;
 
   const ls = legendreSymbol(a, p_in);
   if (ls === p_in - 1n) {
-    return null;
+    return null; // No square root exists
   }
-  if ((p_in % 4n) === 3n) {
+  if (p_in % 4n === 3n) {
+    // p ≡ 3 mod 4 allows direct exponentiation
     return modPow(a, (p_in + 1n) / 4n, p_in);
   }
 
-  // Tonelli–Shanks untuk p ≡ 1 mod 4
+  // Tonelli–Shanks for p ≡ 1 mod 4
   let q = p_in - 1n;
   let s = 0n;
   while ((q & 1n) === 0n) {
@@ -96,80 +104,91 @@ function sqrt_mod_js(a_in, p_in) {
 }
 
 /**
- * T_js(point, s, a, p) → [x', y'] (keduanya BigInt)
- * Jika sqrt_mod_js gagal, naikan s hingga 10 kali, lalu throw Error.
+ * Elliptic‐curve‐derived transformation T_js:
+ *     T_js(point, s, a, p) → [x', y'] (both BigInt)
+ * If sqrt_mod_js fails, increments s up to 10 iterations, then throws Error.
  */
 async function T_js(point, s, a, p) {
+  // point = [x, y] (BigInt coordinates)
   let [x, y] = [BigInt(point[0]), BigInt(point[1])];
-  const inv2 = modPow(2n, BigInt(p) - 2n, BigInt(p));
+  const inv2 = modPow(2n, BigInt(p) - 2n, BigInt(p)); // modular inverse of 2
 
-  let trials = 0;
-  let s_cur = BigInt(s);
+  let attempts = 0;
+  let currentSeed = BigInt(s);
 
-  while (trials < 10) {
-    const h_val = await H_js(x, y, s_cur, p);
-    const x_cand = ((x + BigInt(a) + h_val) * inv2) % BigInt(p);
-    const y_sq = (x * y + h_val) % BigInt(p);
-    const y_cand = sqrt_mod_js(y_sq, BigInt(p));
-    if (y_cand !== null) {
-      return [x_cand, y_cand];
+  while (attempts < 10) {
+    const hVal = await H_js(x, y, currentSeed, p);
+    const xCandidate = ((x + BigInt(a) + hVal) * inv2) % BigInt(p);
+    const ySquared = (x * y + hVal) % BigInt(p);
+    const yCandidate = sqrt_mod_js(ySquared, BigInt(p));
+    if (yCandidate !== null) {
+      return [xCandidate, yCandidate];
     }
-    s_cur += 1n;
-    trials++;
+    currentSeed += 1n;
+    attempts++;
   }
+
   throw new Error(
-    `T_js: Gagal menemukan sqrt untuk y^2 mod p setelah ${trials} percobaan.`
+    `T_js: Failed to compute square root of y^2 mod p after ${attempts} attempts.`
   );
 }
 
 /**
- * _pow_T_range_js(P, startS, exp, a, p)
- *    => hasil T^exp(P) memakai seed index startS..(startS+exp-1).
- * Kembalian: Promise<[BigInt, BigInt]>
+ * Compute T^exp(P) by applying T_js iteratively with seed indices
+ * from startS to (startS + exp - 1).
+ * Returns: Promise<[BigInt, BigInt]> (final point coordinates)
  */
 async function _pow_T_range_js(P, startS, exp, a, p) {
   let result = [BigInt(P[0]), BigInt(P[1])];
-  let s_idx = BigInt(startS);
+  let seedIndex = BigInt(startS);
 
   for (let i = 0; i < exp; i++) {
-    result = await T_js(result, s_idx, a, p);
-    s_idx += 1n;
+    result = await T_js(result, seedIndex, a, p);
+    seedIndex += 1n;
   }
   return result; // [BigInt(x), BigInt(y)]
 }
 
 /**
- * decrypt_block_js(C1, C2, k, r, a, p) → BigInt M_int
+ * Decrypt a single block:
+ *     decrypt_block_js(C1, C2, k, r, a, p) → BigInt M_int
+ * where C1, C2 are elliptic‐curve points, k is the exponent count, r is the prior random index.
  */
 async function decrypt_block_js(C1, C2, k, r, a, p) {
-  const p_big = BigInt(p);
-  const a_big = BigInt(a);
-  const C1_b = [BigInt(C1[0]), BigInt(C1[1])];
-  const C2_b = [BigInt(C2[0]), BigInt(C2[1])];
-  const k_big = BigInt(k);
-  const r_big = BigInt(r);
+  const pBig = BigInt(p);
+  const aBig = BigInt(a);
+  const C1b = [BigInt(C1[0]), BigInt(C1[1])];
+  const C2b = [BigInt(C2[0]), BigInt(C2[1])];
+  const kBig = BigInt(k);
+  const rBig = BigInt(r);
 
-  const startSeed = r_big + 1n; // seeds (r+1) .. (r+k)
-  const S = await _pow_T_range_js(C1_b, startSeed, Number(k_big), a_big, p_big);
-  const M_int = (C2_b[0] - S[0] + p_big) % p_big;
+  // Generate ephemeral key S = T^(k)(C1) starting from seed index r + 1
+  const startSeed = rBig + 1n; // seeds range from (r+1) to (r+k)
+  const S = await _pow_T_range_js(C1b, startSeed, Number(kBig), aBig, pBig);
+
+  // Recover integer M as M_int = (C2.x − S.x) mod p
+  const M_int = (C2b[0] - S[0] + pBig) % pBig;
   return M_int;
 }
 
 /**
- * decrypt_all_text_js(laiData) → String (teks JS asli)
+ * decrypt_all_text_js(laiData) → Promise<String> (the recovered plaintext as UTF‐8)
+ * Processes an array of ciphertext blocks, each containing { C1, C2, r }.
  */
 async function decrypt_all_text_js(laiData) {
-  const p_big = BigInt(laiData.p);
-  const a_big = BigInt(laiData.a);
-  const k_big = BigInt(laiData.k);
+  const pBig = BigInt(laiData.p);
+  const aBig = BigInt(laiData.a);
+  const kBig = BigInt(laiData.k);
   const blocks = laiData.blocks;
 
-  const bit_len = p_big.toString(2).length;
-  const B = Math.floor((bit_len - 1) / 8); // ukuran bytes per blok
+  // Determine block‐byte size: B = floor((bit_length(p) - 1) / 8)
+  const bitLength = pBig.toString(2).length;
+  const B = Math.floor((bitLength - 1) / 8);
 
+  // Convert BigInt M_int to a Uint8Array of length B (big‐endian)
   function intToBytes(m_int) {
     if (m_int === 0n) return new Uint8Array([0x00]);
-    const arr = new Uint8Array(B); // kita pad ke B bytes (big-endian)
+    const arr = new Uint8Array(B);
     let temp = m_int;
     for (let i = B - 1; i >= 0; i--) {
       arr[i] = Number(temp & 0xffn);
@@ -178,6 +197,7 @@ async function decrypt_all_text_js(laiData) {
     return arr;
   }
 
+  // Concatenate all decrypted byte‐chunks
   let combined = new Uint8Array(0);
   for (const blk of blocks) {
     const M_int = await decrypt_block_js(
@@ -189,57 +209,59 @@ async function decrypt_all_text_js(laiData) {
       laiData.p
     );
     const chunkBytes = intToBytes(M_int);
-    const tmp = new Uint8Array(combined.length + chunkBytes.length);
-    tmp.set(combined);
-    tmp.set(chunkBytes, combined.length);
-    combined = tmp;
+    const merged = new Uint8Array(combined.length + chunkBytes.length);
+    merged.set(combined);
+    merged.set(chunkBytes, combined.length);
+    combined = merged;
   }
 
+  // Decode the combined byte array as UTF-8 string
   const decoder = new TextDecoder("utf-8");
   return decoder.decode(combined);
 }
 
-// ---------- Caching & Timing ke localStorage ----------
-
 /**
  * getDecryptedOrCachedWithTiming(laiData, storageKey)
  *
- * Ambil teks terdekripsi dari localStorage jika ada,
- * jika belum, ukur waktu dekripsi, dekripsikan, simpan hasil ke localStorage, lalu kembalikan.
+ * Retrieve the decrypted plaintext from localStorage if available;
+ * otherwise, measure decryption time, perform decryption,
+ * store the result in localStorage, and return both plaintext and duration.
  *
- * Kembalian: Promise<{ text: string, durationMs: number }>
- *   - text: hasil dekripsi (string)
- *   - durationMs: lama waktu dekripsi dalam milidetik (0 jika ambil dari cache)
+ * Returns: Promise<{ text: String, durationMs: number }>
+ *   - text: the decrypted plaintext (UTF-8)
+ *   - durationMs: time elapsed in milliseconds (0 if retrieved from cache)
  *
- * @param {Object} laiData – objek input untuk decrypt_all_text_js
- * @param {string} storageKey – kunci di localStorage untuk menyimpan hasil dekripsi
+ * @param {Object} laiData – input data for decrypt_all_text_js (fields p, a, k, blocks)
+ * @param {String} storageKey – localStorage key for caching the plaintext
  */
 async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedText") {
-  // Cek dulu di localStorage
-  const cached = localStorage.getItem(storageKey);
-  if (cached) {
-    console.log("Mengambil hasil dekripsi dari localStorage (0 ms)");
-    return { text: cached, durationMs: 0 };
+  // Attempt to retrieve from localStorage
+  const cachedText = localStorage.getItem(storageKey);
+  if (cachedText) {
+    console.info("Retrieved decrypted text from localStorage (0 ms).");
+    return { text: cachedText, durationMs: 0 };
   }
 
-  // Kalau belum ada, mulai ukur waktu dan lakukan dekripsi
-  console.log("Belum ada di localStorage, memulai dekripsi...");
+  // If not cached, measure decryption time
+  console.info("No cached plaintext found. Starting decryption...");
   const t0 = performance.now();
   try {
     const decrypted = await decrypt_all_text_js(laiData);
     const t1 = performance.now();
     const elapsed = t1 - t0;
-    // Simpan hasil dekripsi ke localStorage
+
+    // Store decrypted plaintext in localStorage
     localStorage.setItem(storageKey, decrypted);
-    console.log(`Hasil dekripsi selesai dalam ${elapsed.toFixed(2)} ms, disimpan di localStorage`);
+    console.info(`Decryption completed in ${elapsed.toFixed(2)} ms and stored in localStorage.`);
     return { text: decrypted, durationMs: elapsed };
-  } catch (err) {
-    console.error("Gagal dekripsi:", err);
-    throw err;
+  } catch (error) {
+    console.error("Decryption failed:", error);
+    throw error;
   }
 }
 
-// ---------- Expose fungsi publik ----------
-// Anda bisa mengakses decrypt_all_text_js(laiData) atau getDecryptedOrCachedWithTiming(laiData, key) dari index.html
+// Expose public functions for use in HTML/other scripts:
+//   - decrypt_all_text_js(laiData)
+//   - getDecryptedOrCachedWithTiming(laiData, storageKey)
 window.decrypt_all_text_js = decrypt_all_text_js;
 window.getDecryptedOrCachedWithTiming = getDecryptedOrCachedWithTiming;
