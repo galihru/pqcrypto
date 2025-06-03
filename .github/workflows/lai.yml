@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'script.min.js'
-      - '.github/workflows/encrypt-decrypt-js.yml'
+      - '.github/workflows/lai.yml'
 
 jobs:
   encrypt_and_verify:
