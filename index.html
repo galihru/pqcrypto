@@ -73,17 +73,17 @@
         }
 
         :root {
-            --primary-color: #6366f1;
-            --secondary-color: #8b5cf6;
-            --accent-color: #06b6d4;
+            --primary-color: #4f46e5;  /* Increased contrast */
+            --secondary-color: #7c3aed;
+            --accent-color: #0891b2;
             --bg-primary: #0f0f23;
             --bg-secondary: #1a1a3e;
-            --bg-card: rgba(255, 255, 255, 0.05);
+            --bg-card: rgba(255, 255, 255, 0.08);  /* Slightly more opaque for better contrast */
             --text-primary: #ffffff;
-            --text-secondary: #a1a1aa;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
-            --gradient-secondary: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            --text-secondary: #e5e7eb;  /* Lighter gray for better contrast */
+            --border-color: rgba(255, 255, 255, 0.15);
+            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0891b2 100%);
+            --gradient-secondary: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
         }
 
         body {
@@ -92,6 +92,22 @@
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
+        }
+
+        /* Skip link for keyboard users */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+        }
+
+        .skip-link:focus {
+            top: 0;
         }
 
         /* Animated Background */
@@ -112,9 +128,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 20% 50%, #6366f1 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, #8b5cf6 0%, transparent 50%),
-                        radial-gradient(circle at 40% 80%, #06b6d4 0%, transparent 50%);
+            background: radial-gradient(circle at 20% 50%, #4f46e5 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, #7c3aed 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, #0891b2 0%, transparent 50%);
             animation: float 20s ease-in-out infinite;
         }
 
@@ -164,10 +180,13 @@
             text-decoration: none;
             transition: color 0.3s ease;
             position: relative;
+            padding: 0.5rem 0;
         }
 
-        .nav-links a:hover {
+        .nav-links a:hover,
+        .nav-links a:focus {
             color: var(--text-primary);
+            outline: none;
         }
 
         .nav-links a::after {
@@ -181,7 +200,8 @@
             transition: width 0.3s ease;
         }
 
-        .nav-links a:hover::after {
+        .nav-links a:hover::after,
+        .nav-links a:focus::after {
             width: 100%;
         }
 
@@ -250,9 +270,11 @@
             border: 2px solid var(--border-color);
         }
 
-        .btn:hover {
+        .btn:hover,
+        .btn:focus {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+            outline: none;
         }
 
         /* Features Section */
@@ -278,6 +300,10 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
         }
 
         .features-grid {
@@ -309,12 +335,14 @@
             transition: opacity 0.3s ease;
         }
 
-        .feature-card:hover {
+        .feature-card:hover,
+        .feature-card:focus-within {
             transform: translateY(-10px);
             border-color: var(--primary-color);
         }
 
-        .feature-card:hover::before {
+        .feature-card:hover::before,
+        .feature-card:focus-within::before {
             opacity: 1;
         }
 
@@ -338,6 +366,11 @@
         .feature-card h3 {
             font-size: 1.25rem;
             margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
         }
 
         /* Languages Section */
@@ -375,11 +408,13 @@
             transition: transform 0.3s ease;
         }
 
-        .language-card:hover::before {
+        .language-card:hover::before,
+        .language-card:focus-within::before {
             transform: scaleX(1);
         }
 
-        .language-card:hover {
+        .language-card:hover,
+        .language-card:focus-within {
             transform: translateY(-5px);
             border-color: var(--primary-color);
         }
@@ -479,10 +514,13 @@
             color: var(--text-secondary);
             text-decoration: none;
             transition: color 0.3s ease;
+            padding: 0.5rem;
         }
 
-        .footer-links a:hover {
+        .footer-links a:hover,
+        .footer-links a:focus {
             color: var(--primary-color);
+            outline: none;
         }
 
         /* Animations */
@@ -545,6 +583,7 @@
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.9rem;
             overflow-x: auto;
+            color: var(--text-secondary);
         }
 
         /* Badge Styles */
@@ -567,7 +606,7 @@
         /* Language card active state */
         .language-card.active {
             border-color: var(--primary-color);
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(79, 70, 229, 0.1);
             transform: translateY(-5px);
         }
 
@@ -581,11 +620,26 @@
 
         /* Glassmorphism effect */
         .glass-card {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
         }
+        
+        /* Focus styles for accessibility */
+        a:focus,
+        button:focus,
+        .language-card:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+        
+        /* ARIA improvements */
+        [role="button"] {
+            cursor: pointer;
+        }
+        
+        /* Loading overlay */
         #loading-overlay {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
@@ -593,17 +647,32 @@
           align-items: center;
           justify-content: center;
           background: #0f0f23;
-          color: #a1a1aa;
+          color: #e5e7eb;
           font-size: 1.25rem;
           z-index: 9999;
+        }
+        
+        /* Screen reader only class */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
         }
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+    
     <div class="animated-bg"></div>
     
-    <header>
-        <nav>
+    <header role="banner">
+        <nav role="navigation" aria-label="Main navigation">
             <div class="logo">PQCrypto</div>
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
@@ -615,7 +684,7 @@
         </nav>
     </header>
 
-    <main>
+    <main id="main-content" role="main">
         <section id="home" class="hero">
             <div class="hero-content">
                 <h1>Post-Quantum LAI Encryption</h1>
@@ -634,33 +703,33 @@
                     <p>Built for the quantum era with mathematical precision and multi-language support</p>
                 </div>
                 <div class="features-grid">
-                    <div class="feature-card glass-card">
-                        <div class="feature-icon">🔐</div>
+                    <div class="feature-card glass-card" tabindex="0">
+                        <div class="feature-icon" aria-hidden="true">🔐</div>
                         <h3>Quantum-Resistant</h3>
                         <p>Based on isogenies of elliptic curves over lemniscate lattices, providing conjectured resistance against quantum-capable adversaries.</p>
                     </div>
-                    <div class="feature-card glass-card">
-                        <div class="feature-icon">⚡</div>
+                    <div class="feature-card glass-card" tabindex="0">
+                        <div class="feature-icon" aria-hidden="true">⚡</div>
                         <h3>Optimized Performance</h3>
                         <p>Fast branch for p≡3(mod 4) and binary exponentiation for O(log k) complexity in LAI transformations.</p>
                     </div>
-                    <div class="feature-card glass-card">
-                        <div class="feature-icon">🌐</div>
+                    <div class="feature-card glass-card" tabindex="0">
+                        <div class="feature-icon" aria-hidden="true">🌐</div>
                         <h3>Multi-Language Support</h3>
                         <p>Available in Python, JavaScript, Ruby, .NET, and Java with identical API semantics across all platforms.</p>
                     </div>
-                    <div class="feature-card glass-card">
-                        <div class="feature-icon">🔬</div>
+                    <div class="feature-card glass-card" tabindex="0">
+                        <div class="feature-icon" aria-hidden="true">🔬</div>
                         <h3>Mathematically Precise</h3>
                         <p>Every function corresponds exactly to mathematical formulas with hash-based seed functions and modular square roots.</p>
                     </div>
-                    <div class="feature-card glass-card">
-                        <div class="feature-icon">📦</div>
+                    <div class="feature-card glass-card" tabindex="0">
+                        <div class="feature-icon" aria-hidden="true">📦</div>
                         <h3>Pure Implementation</h3>
                         <p>No native code dependencies, using only standard libraries for maximum compatibility and security.</p>
                     </div>
-                    <div class="feature-card glass-card">
-                        <div class="feature-icon">🔄</div>
+                    <div class="feature-card glass-card" tabindex="0">
+                        <div class="feature-icon" aria-hidden="true">🔄</div>
                         <h3>Bulk Operations</h3>
                         <p>Support for bulk JSON decryption and large ciphertext payloads for real-world applications.</p>
                     </div>
@@ -675,32 +744,32 @@
                     <p>One cryptographic standard, multiple implementation languages</p>
                 </div>
                 <div class="languages-grid">
-                    <div class="language-card glass-card" onclick="showCodeExample('python')">
-                        <div class="language-logo">🐍</div>
+                    <div class="language-card glass-card" tabindex="0" role="button" aria-pressed="false" onclick="showCodeExample('python')" onkeydown="if(event.key === 'Enter' || event.key === ' ') showCodeExample('python')">
+                        <div class="language-logo" aria-hidden="true">🐍</div>
                         <h3>Python</h3>
                         <p>pip install laicrypto</p>
                         <div class="badge">PyPI</div>
                     </div>
-                    <div class="language-card glass-card" onclick="showCodeExample('javascript')">
-                        <div class="language-logo">JS</div>
+                    <div class="language-card glass-card" tabindex="0" role="button" aria-pressed="false" onclick="showCodeExample('javascript')" onkeydown="if(event.key === 'Enter' || event.key === ' ') showCodeExample('javascript')">
+                        <div class="language-logo" aria-hidden="true">JS</div>
                         <h3>JavaScript</h3>
                         <p>npm install pqlaicrypto</p>
                         <div class="badge">NPM</div>
                     </div>
-                    <div class="language-card glass-card" onclick="showCodeExample('ruby')">
-                        <div class="language-logo">💎</div>
+                    <div class="language-card glass-card" tabindex="0" role="button" aria-pressed="false" onclick="showCodeExample('ruby')" onkeydown="if(event.key === 'Enter' || event.key === ' ') showCodeExample('ruby')">
+                        <div class="language-logo" aria-hidden="true">💎</div>
                         <h3>Ruby</h3>
                         <p>gem install laicrypto</p>
                         <div class="badge">RubyGems</div>
                     </div>
-                    <div class="language-card glass-card" onclick="showCodeExample('csharp')">
-                        <div class="language-logo">C#</div>
+                    <div class="language-card glass-card" tabindex="0" role="button" aria-pressed="false" onclick="showCodeExample('csharp')" onkeydown="if(event.key === 'Enter' || event.key === ' ') showCodeExample('csharp')">
+                        <div class="language-logo" aria-hidden="true">C#</div>
                         <h3>.NET</h3>
                         <p>PQCrypto.Lai</p>
                         <div class="badge">NuGet</div>
                     </div>
-                    <div class="language-card glass-card" onclick="showCodeExample('java')">
-                        <div class="language-logo">☕</div>
+                    <div class="language-card glass-card" tabindex="0" role="button" aria-pressed="false" onclick="showCodeExample('java')" onkeydown="if(event.key === 'Enter' || event.key === ' ') showCodeExample('java')">
+                        <div class="language-logo" aria-hidden="true">☕</div>
                         <h3>Java</h3>
                         <p>com.pelajaran.pqcrypto</p>
                         <div class="badge">Maven</div>
@@ -763,7 +832,7 @@ recovered = decrypt(C1, C2, private_k, a, p)
         </section>
     </main>
 
-    <footer>
+    <footer role="contentinfo">
         <div class="footer-content">
             <div class="footer-links">
                 <a href="https://github.com/4211421036/pqcrypto">GitHub</a>
