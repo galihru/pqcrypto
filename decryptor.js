@@ -1,4 +1,4 @@
-// decryptor_with_cache.js
+// decryptor_with_cache_and_timing.js
 
 /**
  * Helper: convert ArrayBuffer → Hex string
@@ -199,34 +199,40 @@ async function decrypt_all_text_js(laiData) {
   return decoder.decode(combined);
 }
 
-// ---------- Caching ke localStorage ----------
+// ---------- Caching & Timing ke localStorage ----------
 
 /**
- * getDecryptedOrCached(laiData, storageKey)
+ * getDecryptedOrCachedWithTiming(laiData, storageKey)
  *
  * Ambil teks terdekripsi dari localStorage jika ada,
- * jika belum, dekripsikan, simpan ke localStorage, lalu kembalikan.
+ * jika belum, ukur waktu dekripsi, dekripsikan, simpan hasil ke localStorage, lalu kembalikan.
+ *
+ * Kembalian: Promise<{ text: string, durationMs: number }>
+ *   - text: hasil dekripsi (string)
+ *   - durationMs: lama waktu dekripsi dalam milidetik (0 jika ambil dari cache)
  *
  * @param {Object} laiData – objek input untuk decrypt_all_text_js
  * @param {string} storageKey – kunci di localStorage untuk menyimpan hasil dekripsi
- * @returns {Promise<string>}
  */
-async function getDecryptedOrCached(laiData, storageKey = "decryptedText") {
+async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedText") {
   // Cek dulu di localStorage
   const cached = localStorage.getItem(storageKey);
   if (cached) {
-    console.log("Mengambil hasil dekripsi dari localStorage");
-    return cached;
+    console.log("Mengambil hasil dekripsi dari localStorage (0 ms)");
+    return { text: cached, durationMs: 0 };
   }
 
-  // Kalau belum ada, panggil fungsi dekripsi
+  // Kalau belum ada, mulai ukur waktu dan lakukan dekripsi
   console.log("Belum ada di localStorage, memulai dekripsi...");
+  const t0 = performance.now();
   try {
     const decrypted = await decrypt_all_text_js(laiData);
-    // Simpan ke localStorage (string)
+    const t1 = performance.now();
+    const elapsed = t1 - t0;
+    // Simpan hasil dekripsi ke localStorage
     localStorage.setItem(storageKey, decrypted);
-    console.log("Hasil dekripsi tersimpan di localStorage");
-    return decrypted;
+    console.log(`Hasil dekripsi selesai dalam ${elapsed.toFixed(2)} ms, disimpan di localStorage`);
+    return { text: decrypted, durationMs: elapsed };
   } catch (err) {
     console.error("Gagal dekripsi:", err);
     throw err;
@@ -234,6 +240,6 @@ async function getDecryptedOrCached(laiData, storageKey = "decryptedText") {
 }
 
 // ---------- Expose fungsi publik ----------
-// Anda bisa mengakses decrypt_all_text_js(laiData) atau getDecryptedOrCached(laiData, key) dari index.html
+// Anda bisa mengakses decrypt_all_text_js(laiData) atau getDecryptedOrCachedWithTiming(laiData, key) dari index.html
 window.decrypt_all_text_js = decrypt_all_text_js;
-window.getDecryptedOrCached = getDecryptedOrCached;
+window.getDecryptedOrCachedWithTiming = getDecryptedOrCachedWithTiming;
