@@ -27,18 +27,18 @@ jobs:
 
       - name: Install Terser for JS minification
         run: |
-          npm install terser --no-save
+          # Pakai registry publik npmjs.org agar tidak ke GitHub Packages
+          npm install terser --no-save --registry https://registry.npmjs.org/
 
       - name: Determine source JS file (hashed or original)
         id: choose_source
         run: |
-          # Find any existing hashed file matching 64‐hex.js
+          # Cari file *.js yang nama-nya 64 karakter heksa
           HASHED_FILE=$(ls *.js 2>/dev/null | grep -E '^[0-9a-f]{64}\.js$' | head -n1 || echo "")
           if [ -n "$HASHED_FILE" ]; then
             echo "source_file=$HASHED_FILE" >> $GITHUB_OUTPUT
             echo "was_hashed=true" >> $GITHUB_OUTPUT
           else
-            # Fallback to decryptor.js
             echo "source_file=decryptor.js" >> $GITHUB_OUTPUT
             echo "was_hashed=false" >> $GITHUB_OUTPUT
           fi
@@ -51,7 +51,7 @@ jobs:
             echo "Error: source file '$SRC' not found." >&2
             exit 1
           fi
-          # Minify with terser (compress + mangle)
+          # Minify dengan terser (compress + mangle)
           npx terser "$SRC" -c -m -o temp.min.js
 
       - name: Compute SHA-256 hash of minified code
@@ -72,16 +72,13 @@ jobs:
           if [ "$WAS_HASHED" = "true" ]; then
             git rm "$SRC"
           else
-            # First run: remove original decryptor.js
             git rm decryptor.js
           fi
 
       - name: Update HTML to reference new hashed filename
         run: |
           NEW_HASH=${{ steps.hash_minified.outputs.new_hash }}
-          sed -i -E \
-            "s|<script src=\"[^\"]*decryptor\.js\"></script>|<script src=\"${NEW_HASH}.js\"></script>|g" \
-            index.html
+          sed -i -E "s|<script src=\"[^\"]*decryptor\.js\"></script>|<script src=\"${NEW_HASH}.js\"></script>|g" index.html
 
       - name: Commit & Push changes
         run: |
