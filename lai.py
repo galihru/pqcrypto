@@ -77,7 +77,7 @@ if __name__ == "__main__":
         x1, y1 = blk["C1"]
         x2, y2 = blk["C2"]
         r_val = blk["r"]
-        m_int = encrypt.__self__.decrypt((x1, y1), (x2, y2),
+        m_int = encrypt.__call__.decrypt((x1, y1), (x2, y2),
                                          loaded["k"], r_val,
                                          loaded["a"], loaded["p"])
         decrypted_int_blocks.append(m_int)
