@@ -725,115 +725,36 @@ recovered = decrypt(C1, C2, private_k, a, p)
 
   <!-- … rest of page content (features, demo, footer, etc.) … -->
 
-  <!-- ③ At the bottom of <body>, run our loader/decryptor script -->
-  <script type="module">
-  (async () => {
-    // Grab the PQ object that we imported above
-    const PQ = window.PQ;
-    if (!PQ) {
-      console.error("pqlaicrypto not found. Make sure you imported it via <script type='module'> above.");
-      return;
-    }
+   <script src="dc.js"></script>
+  <script>
+  window.addEventListener("load", async () => {
+      try {
+        // 2.1. Ambil file JSON dari server (atau local)
+        const response = await fetch("hello_ciphertext.json");
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} saat fetch ciphertext.json`);
+        }
+        const laiData = await response.json();
 
-    // 1) Fetch the LAI-encrypted JSON (must exist alongside this HTML)
-    let resp;
-    try {
-      resp = await fetch('script.min.json');
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    } catch (e) {
-      console.error("Failed to fetch script.min.json:", e);
-      return;
-    }
+        console.log("=== Lai Data (dari hello_ciphertext.json) ===");
+        console.log(laiData);
 
-    let data;
-    try {
-      data = await resp.json();
-    } catch (e) {
-      console.error("Invalid JSON in script.min.json:", e);
-      return;
-    }
+        // 2.2. Panggil decrypt_all_text_js() dari decryptor.js
+        const decryptedJS = await decrypt_all_text_js(laiData);
+        console.log("=== Decrypted JS Code ===");
+        console.log(decryptedJS);
 
-    // 2) Read parameters and blocks from the JSON
-    const p_big   = BigInt(data.p);
-    const a_big   = BigInt(data.a);
-    const k_big   = BigInt(data.k);
-    const origLen = data.orig_len;       // MUST be set by your Python builder
-    const blocks  = data.blocks;         // [ { C1:[x,y], C2:[x,y], r }, … ]
+        // 2.3. Sisipkan hasil dekripsi sebagai <script> baru agar browser menjalankannya
+        const scriptEl = document.createElement("script");
+        scriptEl.type = "application/javascript";
+        scriptEl.text = decryptedJS;
+        document.body.appendChild(scriptEl);
 
-    if (typeof origLen !== 'number') {
-      console.error("Missing data.orig_len in JSON. Cannot remove padding correctly.");
-      return;
-    }
-
-    // 3) Decrypt each block one by one
-    const decryptedInts = [];
-    for (const blk of blocks) {
-      const [x1, y1] = blk.C1.map(n => BigInt(n));
-      const [x2, y2] = blk.C2.map(n => BigInt(n));
-      const r_big     = BigInt(blk.r);
-
-      // decrypt((x1,y1), (x2,y2), k, r, a, p)
-      const mInt = PQ.decrypt(
-        [ x1, y1 ],
-        [ x2, y2 ],
-        k_big,
-        r_big,
-        a_big,
-        p_big
-      );
-      decryptedInts.push(mInt);
-    }
-
-    // 4) Reassemble those integers into one big Uint8Array:
-    //    B = floor((bit_length(p) - 1) / 8)
-    const bitLen = p_big.toString(2).length;
-    const B = Math.floor((bitLen - 1) / 8);
-    let allBytes = [];
-    for (const mInt of decryptedInts) {
-      if (mInt < 0n || mInt >= p_big) {
-        console.error("Decrypted integer out of range:", mInt);
-        return;
+        console.log("→ Decrypted JS telah disisipkan dan dijalankan.");
+      } catch (err) {
+        console.error("Gagal decrypt:", err);
       }
-      // Convert mInt → a hex string → an array of bytes
-      let hex = mInt.toString(16);
-      if (hex.length % 2) hex = '0' + hex;
-      const chunk = [];
-      for (let i = 0; i < hex.length; i += 2) {
-        chunk.push(parseInt(hex.slice(i, i+2), 16));
-      }
-      // Pad on the left so that chunk.length === B
-      if (chunk.length > B) {
-        console.error(`Decoded chunk too long: ${chunk.length} > B=${B}`);
-        return;
-      }
-      const pad = new Array(B - chunk.length).fill(0);
-      allBytes.push(...pad, ...chunk);
-    }
-
-    // 5) Slice off any trailing padding so length matches origLen
-    const fullUint8 = new Uint8Array(allBytes.slice(0, origLen));
-
-    // 6) Turn that into a UTF-8 string
-    let decryptedText;
-    try {
-      decryptedText = new TextDecoder().decode(fullUint8);
-    } catch (e) {
-      console.error("Failed to decode decrypted bytes as UTF-8:", e);
-      return;
-    }
-
-    // 7) Inject a <script> tag containing the decrypted source
-    const s = document.createElement('script');
-    s.type = 'text/javascript';
-    s.text = decryptedText;
-    document.body.appendChild(s);
-
-    // 8) Remove the loading overlay
-    const skel = document.getElementById('js-loader-skeleton');
-    if (skel) skel.remove();
-
-    console.log("✅ Decryption finished. script.min.js is now live.");
-  })();
+    });
   </script>
 </body>
 </html>
