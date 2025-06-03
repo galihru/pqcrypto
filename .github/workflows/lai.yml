@@ -41,6 +41,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "script.min.json tidak berubah, skip commit."
           else
-            git commit -m "chore: update script.json (auto-generated)"
+            git commit -m "chore: update encryption script.min.json (auto-generated)"
             git push origin HEAD:main
           fi
