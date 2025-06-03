@@ -1,0 +1,42 @@
+# .github/workflows/hash-and-inject-decryptor.yml
+
+name: Hash & Inject Decryptor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  hash-and-inject:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
+      - name: Compute SHA-256 hash of decryptor.js
+        id: hashfile
+        run: |
+          # Hitung hash penuh dari decryptor.js
+          HASH=$(sha256sum decryptor.js | awk '{print $1}')
+          echo "file_hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Rename decryptor.js to <hash>.js
+        run: |
+          HASH=${{ steps.hashfile.outputs.file_hash }}
+          git mv decryptor.js "${HASH}.js"
+
+      - name: Update HTML to reference hashed filename
+        run: |
+          HASH=${{ steps.hashfile.outputs.file_hash }}
+          # Ganti <script src="decryptor.js"></script> menjadi tag dengan nama file baru
+          sed -i -E "s|<script src=\"[^\"]*decryptor\.js\"></script>|<script src=\"${HASH}.js\"></script>|g" index.html
+
+      - name: Commit & Push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html "${{ steps.hashfile.outputs.file_hash }}.js"
+          git commit -m "Rename decryptor.js → ${{ steps.hashfile.outputs.file_hash }}.js and update HTML"
+          git push origin HEAD:main
