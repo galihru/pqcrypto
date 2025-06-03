@@ -1,24 +1,19 @@
-// ───────────────────────────────────────────────────────────────────────
 // decryptor.js
-//
-//   This file defines window.decrypt_all_text_js(...) (your existing helper)
-//   and then immediately fetches + decrypts `enkripsi.json` and injects
-//   the recovered JavaScript into the page.  
-// ───────────────────────────────────────────────────────────────────────
 
-// === (A) YOUR existing helper functions, verbatim ===
-//    Copy exactly from your “decrypt_all_text_js” snippet (no changes),
-//    except remove the “window.decrypt_all_text_js = …” export line.
-//    We will re‐export it at the very end.
-
-// (1) bytesToHex, H_js, modPow, legendreSymbol, sqrt_mod_js, T_js, _pow_T_range_js, decrypt_block_js:
-
+/**
+ * Helper: convert ArrayBuffer → Hex string
+ */
 function bytesToHex(bytes) {
   return Array.from(bytes)
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
+/**
+ * SHA-256-based seed H(x,y,s) mod p
+ *     H(x,y,s) = SHA256("x|y|s") mod p
+ * Kembalian: Promise<BigInt>
+ */
 async function H_js(x, y, s, p) {
   const str = `${x}|${y}|${s}`;
   const enc = new TextEncoder();
@@ -30,6 +25,9 @@ async function H_js(x, y, s, p) {
   return hashBig % BigInt(p);
 }
 
+/**
+ * Modular exponentiation: base^exp mod mod (BigInt)
+ */
 function modPow(base, exp, mod) {
   let result = 1n;
   base = base % mod;
@@ -41,6 +39,11 @@ function modPow(base, exp, mod) {
   return result;
 }
 
+/**
+ * Tonelli–Shanks: sqrt_mod(a, p)
+ * Jika a bukan kuadrat residu mod p, kembalikan null.
+ * Kembalian: BigInt (akar) atau null
+ */
 function legendreSymbol(a, p) {
   return modPow(a, (p - 1n) / 2n, p);
 }
@@ -57,6 +60,7 @@ function sqrt_mod_js(a_in, p_in) {
     return modPow(a, (p_in + 1n) / 4n, p_in);
   }
 
+  // Tonelli–Shanks untuk p ≡ 1 mod 4
   let q = p_in - 1n;
   let s = 0n;
   while ((q & 1n) === 0n) {
@@ -91,6 +95,10 @@ function sqrt_mod_js(a_in, p_in) {
   }
 }
 
+/**
+ * T_js(point, s, a, p) → [x', y'] (keduanya BigInt)
+ * Jika sqrt_mod_js gagal, naikan s hingga 10 kali, lalu throw Error.
+ */
 async function T_js(point, s, a, p) {
   let [x, y] = [BigInt(point[0]), BigInt(point[1])];
   const inv2 = modPow(2n, BigInt(p) - 2n, BigInt(p));
@@ -110,10 +118,15 @@ async function T_js(point, s, a, p) {
     trials++;
   }
   throw new Error(
-    `T_js: failed to find sqrt for y^2 mod p after ${trials} trials.`
+    `T_js: Gagal menemukan sqrt untuk y^2 mod p setelah ${trials} percobaan.`
   );
 }
 
+/**
+ * _pow_T_range_js(P, startS, exp, a, p)
+ *    => hasil T^exp(P) memakai seed index startS..(startS+exp-1).
+ * Kembalian: Promise<[BigInt, BigInt]>
+ */
 async function _pow_T_range_js(P, startS, exp, a, p) {
   let result = [BigInt(P[0]), BigInt(P[1])];
   let s_idx = BigInt(startS);
@@ -122,9 +135,12 @@ async function _pow_T_range_js(P, startS, exp, a, p) {
     result = await T_js(result, s_idx, a, p);
     s_idx += 1n;
   }
-  return result;
+  return result; // [BigInt(x), BigInt(y)]
 }
 
+/**
+ * decrypt_block_js(C1, C2, k, r, a, p) → BigInt M_int
+ */
 async function decrypt_block_js(C1, C2, k, r, a, p) {
   const p_big = BigInt(p);
   const a_big = BigInt(a);
@@ -139,6 +155,9 @@ async function decrypt_block_js(C1, C2, k, r, a, p) {
   return M_int;
 }
 
+/**
+ * decrypt_all_text_js(laiData) → String (teks JS asli)
+ */
 async function decrypt_all_text_js(laiData) {
   const p_big = BigInt(laiData.p);
   const a_big = BigInt(laiData.a);
@@ -146,11 +165,11 @@ async function decrypt_all_text_js(laiData) {
   const blocks = laiData.blocks;
 
   const bit_len = p_big.toString(2).length;
-  const B = Math.floor((bit_len - 1) / 8);
+  const B = Math.floor((bit_len - 1) / 8); // ukuran bytes per blok
 
   function intToBytes(m_int) {
     if (m_int === 0n) return new Uint8Array([0x00]);
-    const arr = new Uint8Array(B);
+    const arr = new Uint8Array(B); // kita pad ke B bytes (big-endian)
     let temp = m_int;
     for (let i = B - 1; i >= 0; i--) {
       arr[i] = Number(temp & 0xffn);
@@ -173,49 +192,6 @@ async function decrypt_all_text_js(laiData) {
   return decoder.decode(combined);
 }
 
-// Re‐export so that index.html (or anyone) can call it:
+// ---------- Expose fungsi publik (misalnya untuk dipanggil index.html) ----------
+// Anda bisa mengakses decrypt_all_text_js(laiData) dari index.html
 window.decrypt_all_text_js = decrypt_all_text_js;
-
-
-// === (B) Immediately “bootstrap” fetch+decryption+injection ===
-
-(async () => {
-  // 1) Fetch the encrypted JSON
-  let response;
-  try {
-    response = await fetch("script.min.json");
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  } catch (err) {
-    console.error("❌ Failed to fetch enkripsi.json:", err);
-    return;
-  }
-
-  let payload;
-  try {
-    payload = await response.json();
-  } catch (err) {
-    console.error("❌ Could not parse JSON:", err);
-    return;
-  }
-
-  // 2) Call decrypt_all_text_js(payload) to get the recovered JS text
-  let recoveredText;
-  try {
-    recoveredText = await decrypt_all_text_js(payload);
-  } catch (err) {
-    console.error("❌ decrypt_all_text_js() threw an error:", err);
-    return;
-  }
-
-  // 3) Inject as a <script> tag so it runs immediately
-  const scriptTag = document.createElement("script");
-  scriptTag.type = "text/javascript";
-  scriptTag.text = recoveredText;
-  document.body.appendChild(scriptTag);
-
-  // 4) Remove “Loading…” overlay (if present)
-  const overlay = document.getElementById("loading-overlay");
-  if (overlay) overlay.remove();
-
-  console.log("✅ Decryption complete, original JS has been injected.");
-})();
