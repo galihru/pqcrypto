@@ -84,7 +84,7 @@ T\bigl((x,y),\,s;\,a,\,p\bigr)
 $$
 
   where $$\(h = H(x,y,s)\)$$.
-- **Binary Exponentiation** of $$\(T\)$$ to compute $$\(T^k(P_0)\)$$ in $$\(O(\log k)\)$$ time.
+- **Binary Exponentiation** of $$\(T\)$$ to compute $$\(T^k(P_0)\)$$ in $$\(O(\log k)\$$) time.
 - **Key Generation, Encryption, and Decryption** routines for integer messages $$\(0 \le m < p\)$$.
 - **Bulk JSON Decryption**: decrypt an entire JSON payload into raw bytes (e.g., to reconstruct a file or UTF-8 text).
 
@@ -104,7 +104,7 @@ H(x, y, s) \;=\; \mathrm{SHA256}\bigl(\text{bytes}(x)\,\|\,\text{bytes}(y)\,\|\,
 \]
 $$
 
-where “$$\(\|\)$$” denotes concatenation of the big-endian byte representations.
+where $$“\(\|\)”$$ denotes concatenation of the big-endian byte representations.
 
 ### 2. Modular Square Root (Tonelli–Shanks)
 
@@ -118,9 +118,9 @@ $$
   \]
 $$
 
-- Otherwise: apply the general Tonelli–Shanks algorithm in $$ \(O(\log^2 p)\) $$ time.
+- Otherwise: apply the general Tonelli–Shanks algorithm in $$\(O(\log^2 p)\)$$ time.
 
-### 3. LAI Transformation $$ \(T\) $$
+### 3. LAI Transformation $$\(T\)$$
 
 Given $$\((x,y)\in\mathbb{F}_p^2\)$$, parameter $$\(a\)$$, and seed index $$\(s\)$$, define
 
