@@ -109,7 +109,6 @@ function sqrt_mod_js(a_in, p_in) {
  * If sqrt_mod_js fails, increments s up to 10 iterations, then throws Error.
  */
 async function T_js(point, s, a, p) {
-  // point = [x, y] (BigInt coordinates)
   let [x, y] = [BigInt(point[0]), BigInt(point[1])];
   const inv2 = modPow(2n, BigInt(p) - 2n, BigInt(p)); // modular inverse of 2
 
@@ -162,7 +161,7 @@ async function decrypt_block_js(C1, C2, k, r, a, p) {
   const kBig = BigInt(k);
   const rBig = BigInt(r);
 
-  // Generate ephemeral key S = T^(k)(C1) starting from seed index r + 1
+  // Generate ephemeral key S = T^k(C1) starting from seed index r + 1
   const startSeed = rBig + 1n; // seeds range from (r+1) to (r+k)
   const S = await _pow_T_range_js(C1b, startSeed, Number(kBig), aBig, pBig);
 
@@ -237,13 +236,14 @@ async function decrypt_all_text_js(laiData) {
 async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedText") {
   // Attempt to retrieve from localStorage
   const cachedText = localStorage.getItem(storageKey);
-  if (cachedText) {
-    console.info("Retrieved decrypted text from localStorage (0 ms).");
+  if (cachedText !== null) {
+    console.info("[Cache] Retrieved decrypted text from localStorage (0 ms). Key =", storageKey);
     return { text: cachedText, durationMs: 0 };
   }
 
   // If not cached, measure decryption time
-  console.info("No cached plaintext found. Starting decryption...");
+  console.info("[Cache] No cached plaintext found under key =", storageKey);
+  console.info("[Cache] Starting full decryption…");
   const t0 = performance.now();
   try {
     const decrypted = await decrypt_all_text_js(laiData);
@@ -251,17 +251,28 @@ async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedTe
     const elapsed = t1 - t0;
 
     // Store decrypted plaintext in localStorage
-    localStorage.setItem(storageKey, decrypted);
-    console.info(`Decryption completed in ${elapsed.toFixed(2)} ms and stored in localStorage.`);
+    try {
+      localStorage.setItem(storageKey, decrypted);
+      console.info(`[Cache] Stored decrypted text into localStorage under key = '${storageKey}'.`);
+      // Cek sekali lagi apakah benar tersimpan:
+      const verify = localStorage.getItem(storageKey);
+      if (verify === null) {
+        console.warn(`[Cache] Warning: after setItem, getItem('${storageKey}') masih null!`);
+      } else {
+        console.info(`[Cache] Verification: getItem('${storageKey}') succeeded.`);
+      }
+    } catch (storageError) {
+      console.error("[Cache] localStorage.setItem threw error:", storageError);
+    }
+
+    console.info(`[Timing] Decryption completed in ${elapsed.toFixed(2)} ms.`);
     return { text: decrypted, durationMs: elapsed };
   } catch (error) {
-    console.error("Decryption failed:", error);
+    console.error("[Decryption] Failed:", error);
     throw error;
   }
 }
 
-// Expose public functions for use in HTML/other scripts:
-//   - decrypt_all_text_js(laiData)
-//   - getDecryptedOrCachedWithTiming(laiData, storageKey)
+// Expose public functions:
 window.decrypt_all_text_js = decrypt_all_text_js;
 window.getDecryptedOrCachedWithTiming = getDecryptedOrCachedWithTiming;
