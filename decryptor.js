@@ -1,4 +1,4 @@
-// decryptor_with_cache_and_timing.js
+// decryptor_with_fetch_and_cache.js
 
 /**
  * Helper: convert ArrayBuffer → Hexadecimal string
@@ -61,14 +61,12 @@ function sqrt_mod_js(a_in, p_in) {
 
   const ls = legendreSymbol(a, p_in);
   if (ls === p_in - 1n) {
-    return null; // No square root exists
+    return null;
   }
   if (p_in % 4n === 3n) {
-    // p ≡ 3 mod 4 allows direct exponentiation
     return modPow(a, (p_in + 1n) / 4n, p_in);
   }
 
-  // Tonelli–Shanks for p ≡ 1 mod 4
   let q = p_in - 1n;
   let s = 0n;
   while ((q & 1n) === 0n) {
@@ -110,7 +108,7 @@ function sqrt_mod_js(a_in, p_in) {
  */
 async function T_js(point, s, a, p) {
   let [x, y] = [BigInt(point[0]), BigInt(point[1])];
-  const inv2 = modPow(2n, BigInt(p) - 2n, BigInt(p)); // modular inverse of 2
+  const inv2 = modPow(2n, BigInt(p) - 2n, BigInt(p));
 
   let attempts = 0;
   let currentSeed = BigInt(s);
@@ -145,7 +143,7 @@ async function _pow_T_range_js(P, startS, exp, a, p) {
     result = await T_js(result, seedIndex, a, p);
     seedIndex += 1n;
   }
-  return result; // [BigInt(x), BigInt(y)]
+  return result;
 }
 
 /**
@@ -162,10 +160,10 @@ async function decrypt_block_js(C1, C2, k, r, a, p) {
   const rBig = BigInt(r);
 
   // Generate ephemeral key S = T^k(C1) starting from seed index r + 1
-  const startSeed = rBig + 1n; // seeds range from (r+1) to (r+k)
+  const startSeed = rBig + 1n;
   const S = await _pow_T_range_js(C1b, startSeed, Number(kBig), aBig, pBig);
 
-  // Recover integer M as M_int = (C2.x − S.x) mod p
+  // Recover integer M: M_int = (C2.x − S.x) mod p
   const M_int = (C2b[0] - S[0] + pBig) % pBig;
   return M_int;
 }
@@ -229,21 +227,17 @@ async function decrypt_all_text_js(laiData) {
  * Returns: Promise<{ text: String, durationMs: number }>
  *   - text: the decrypted plaintext (UTF-8)
  *   - durationMs: time elapsed in milliseconds (0 if retrieved from cache)
- *
- * @param {Object} laiData – input data for decrypt_all_text_js (fields p, a, k, blocks)
- * @param {String} storageKey – localStorage key for caching the plaintext
  */
-async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedText") {
+async function getDecryptedOrCachedWithTiming(laiData, storageKey) {
   // Attempt to retrieve from localStorage
   const cachedText = localStorage.getItem(storageKey);
   if (cachedText !== null) {
-    console.info("[Cache] Retrieved decrypted text from localStorage (0 ms). Key =", storageKey);
+    console.info(`[Cache] Retrieved decrypted text from localStorage (0 ms). Key = ${storageKey}`);
     return { text: cachedText, durationMs: 0 };
   }
 
   // If not cached, measure decryption time
-  console.info("[Cache] No cached plaintext found under key =", storageKey);
-  console.info("[Cache] Starting full decryption…");
+  console.info(`[Cache] No cached plaintext found under key = ${storageKey}. Starting full decryption…`);
   const t0 = performance.now();
   try {
     const decrypted = await decrypt_all_text_js(laiData);
@@ -254,15 +248,15 @@ async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedTe
     try {
       localStorage.setItem(storageKey, decrypted);
       console.info(`[Cache] Stored decrypted text into localStorage under key = '${storageKey}'.`);
-      // Cek sekali lagi apakah benar tersimpan:
+      // Verify storage
       const verify = localStorage.getItem(storageKey);
       if (verify === null) {
-        console.warn(`[Cache] Warning: after setItem, getItem('${storageKey}') masih null!`);
+        console.warn(`[Cache] Warning: after setItem, getItem('${storageKey}') is still null!`);
       } else {
         console.info(`[Cache] Verification: getItem('${storageKey}') succeeded.`);
       }
     } catch (storageError) {
-      console.error("[Cache] localStorage.setItem threw error:", storageError);
+      console.error("[Cache] localStorage.setItem error:", storageError);
     }
 
     console.info(`[Timing] Decryption completed in ${elapsed.toFixed(2)} ms.`);
@@ -273,6 +267,50 @@ async function getDecryptedOrCachedWithTiming(laiData, storageKey = "decryptedTe
   }
 }
 
-// Expose public functions:
+/**
+ * fetchAndDecrypt()
+ *
+ * Fetches `laiData.json` from the same directory, decrypts or retrieves from cache,
+ * then writes the results into an element with ID "output".
+ *
+ * - Expects a JSON file at "./laiData.json" with the structure:
+ *     {
+ *       "p": "<prime modulus as string>",
+ *       "a": "<curve parameter as string>",
+ *       "k": "<iteration count as string>",
+ *       "blocks": [
+ *         { "C1": ["<x>", "<y>"], "C2": ["<x>", "<y>"], "r": "<random index>" },
+ *         … more blocks …
+ *       ]
+ *     }
+ *
+ * - Writes decrypted plaintext and timing into <pre id="output">…</pre>.
+ */
+async function fetchAndDecrypt() {
+  let laiData;
+  try {
+    const response = await fetch("script.min.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} fetching script.min.json`);
+    }
+    laiData = await response.json();
+  } catch (fetchError) {
+    console.error("[fetchAndDecrypt] Failed to fetch script.min.json:", fetchError);
+    return;
+  }
+
+  const cacheKey = "PQCrypto";
+  try {
+    const result = await getDecryptedOrCachedWithTiming(laiData, cacheKey);
+  } catch (decryptError) {
+    console.error("[fetchAndDecrypt] Decryption error:", decryptError);
+  }
+}
+
+// When DOM is fully loaded, automatically invoke fetchAndDecrypt().
+document.addEventListener("DOMContentLoaded", fetchAndDecrypt);
+
+// Expose public functions if needed elsewhere
 window.decrypt_all_text_js = decrypt_all_text_js;
 window.getDecryptedOrCachedWithTiming = getDecryptedOrCachedWithTiming;
+window.fetchAndDecrypt = fetchAndDecrypt;
