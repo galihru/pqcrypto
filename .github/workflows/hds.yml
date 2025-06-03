@@ -1,46 +1,92 @@
-# .github/workflows/hash-and-inject-decryptor.yml
-
-name: Hash & Inject Decryptor
+name: Hash, Minify & Inject Decryptor
 
 on:
+  schedule:
+    - cron: '*/5 * * * *'
   push:
     branches:
       - main
-  schedule:
-    - cron: '*/5 * * * *'
 
 permissions:
   contents: write
 
 jobs:
-  hash-and-inject:
+  hash-minify-inject:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           persist-credentials: true
 
-      - name: Compute SHA-256 hash of decryptor.js
-        id: hashfile
-        run: |
-          HASH=$(sha256sum decryptor.js | awk '{print $1}')
-          echo "file_hash=$HASH" >> $GITHUB_OUTPUT
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
 
-      - name: Rename decryptor.js to <hash>.js
+      - name: Install Terser for JS minification
         run: |
-          HASH=${{ steps.hashfile.outputs.file_hash }}
-          git mv decryptor.js "${HASH}.js"
+          npm install terser --no-save
 
-      - name: Update HTML to reference hashed filename
+      - name: Determine source JS file (hashed or original)
+        id: choose_source
         run: |
-          HASH=${{ steps.hashfile.outputs.file_hash }}
-          sed -i -E "s|<script src=\"[^\"]*decryptor\.js\"></script>|<script src=\"${HASH}.js\"></script>|g" index.html
+          # Find any existing hashed file matching 64‐hex.js
+          HASHED_FILE=$(ls *.js 2>/dev/null | grep -E '^[0-9a-f]{64}\.js$' | head -n1 || echo "")
+          if [ -n "$HASHED_FILE" ]; then
+            echo "source_file=$HASHED_FILE" >> $GITHUB_OUTPUT
+            echo "was_hashed=true" >> $GITHUB_OUTPUT
+          else
+            # Fallback to decryptor.js
+            echo "source_file=decryptor.js" >> $GITHUB_OUTPUT
+            echo "was_hashed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Minify chosen source file
+        id: minify
+        run: |
+          SRC=${{ steps.choose_source.outputs.source_file }}
+          if [ ! -f "$SRC" ]; then
+            echo "Error: source file '$SRC' not found." >&2
+            exit 1
+          fi
+          # Minify with terser (compress + mangle)
+          npx terser "$SRC" -c -m -o temp.min.js
+
+      - name: Compute SHA-256 hash of minified code
+        id: hash_minified
+        run: |
+          HASH=$(sha256sum temp.min.js | awk '{print $1}')
+          echo "new_hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Prepare new hashed filename
+        run: |
+          NEW_HASH=${{ steps.hash_minified.outputs.new_hash }}
+          mv temp.min.js "${NEW_HASH}.js"
+
+      - name: Remove old files (previous hashed or original)
+        run: |
+          SRC=${{ steps.choose_source.outputs.source_file }}
+          WAS_HASHED=${{ steps.choose_source.outputs.was_hashed }}
+          if [ "$WAS_HASHED" = "true" ]; then
+            git rm "$SRC"
+          else
+            # First run: remove original decryptor.js
+            git rm decryptor.js
+          fi
+
+      - name: Update HTML to reference new hashed filename
+        run: |
+          NEW_HASH=${{ steps.hash_minified.outputs.new_hash }}
+          sed -i -E \
+            "s|<script src=\"[^\"]*decryptor\.js\"></script>|<script src=\"${NEW_HASH}.js\"></script>|g" \
+            index.html
 
       - name: Commit & Push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html "${{ steps.hashfile.outputs.file_hash }}.js"
-          git commit -m "Rename decryptor.js → ${{ steps.hashfile.outputs.file_hash }}.js and update HTML"
+          git add index.html "${{ steps.hash_minified.outputs.new_hash }}.js"
+          git commit -m "Minify & rename → ${{ steps.hash_minified.outputs.new_hash }}.js, update HTML"
           git push
