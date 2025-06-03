@@ -1,0 +1,84 @@
+name: Hash, Minify & Inject Decryptor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  hash-minify-inject:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Terser for JS minification
+        run: |
+          npm install terser --no-save --registry https://registry.npmjs.org/
+
+      - name: Identify previous hashed file (if any)
+        id: find_old
+        run: |
+          # Cari file *.js dengan nama 64-karakter heksa
+          OLD_HASHED=$(ls *.js 2>/dev/null | grep -E '^[0-9a-f]{64}\.js$' | head -n1 || echo "")
+          echo "old_hashed=$OLD_HASHED" >> $GITHUB_OUTPUT
+
+      - name: Minify original decryptor.js
+        id: minify
+        run: |
+          if [ ! -f decryptor.js ]; then
+            echo "Error: decryptor.js not found." >&2
+            exit 1
+          fi
+          npx terser decryptor.js -c -m -o temp.min.js
+
+      - name: Compute SHA-256 hash of minified code
+        id: hash_minified
+        run: |
+          HASH=$(sha256sum temp.min.js | awk '{print $1}')
+          echo "new_hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Rename minified file to <new_hash>.js
+        run: |
+          NEW_HASH=${{ steps.hash_minified.outputs.new_hash }}
+          mv temp.min.js "${NEW_HASH}.js"
+
+      - name: Remove previous hashed file if it exists
+        run: |
+          OLD=${{ steps.find_old.outputs.old_hashed }}
+          if [ -n "$OLD" ]; then
+            git rm "$OLD"
+          fi
+
+      - name: Update HTML to reference the new hashed filename
+        run: |
+          NEW_HASH=${{ steps.hash_minified.outputs.new_hash }}
+          sed -i -E \
+            "s|<script src=\"[0-9a-f]{64}\.js\"></script>|<script src=\"${NEW_HASH}.js\"></script>|g" \
+            index.html
+
+      - name: Commit & Push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html "${{ steps.hash_minified.outputs.new_hash }}.js"
+          # Hapus file lama hanya jika ditemukan
+          OLD=${{ steps.find_old.outputs.old_hashed }}
+          if [ -n "$OLD" ]; then
+            git add -u
+          fi
+          git commit -m "Minify & rename → ${{ steps.hash_minified.outputs.new_hash }}.js, update HTML"
+          git push
