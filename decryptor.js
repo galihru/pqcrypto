@@ -229,7 +229,6 @@ async function decrypt_all_text_js(laiData) {
 async function getDecryptedOrCachedWithTiming(laiData, storageKey) {
   const cachedText = localStorage.getItem(storageKey);
   if (cachedText !== null) {
-    console.info(`[Cache] Using cached plaintext (0 ms). Key="${storageKey}"`);
     return { text: cachedText, durationMs: 0 };
   }
 
@@ -241,13 +240,10 @@ async function getDecryptedOrCachedWithTiming(laiData, storageKey) {
 
   try {
     localStorage.setItem(storageKey, decrypted);
-    console.info(`[Cache] Stored plaintext under "${storageKey}". Verification:`,
       localStorage.getItem(storageKey) !== null);
   } catch (e) {
     console.error("[Cache] Failed to store in localStorage:", e);
   }
-
-  console.info(`[Timing] Decryption took ${elapsed.toFixed(2)} ms.`);
   return { text: decrypted, durationMs: elapsed };
 }
 
@@ -286,7 +282,6 @@ async function fetchAndDecrypt() {
     scriptEl.type = "text/javascript";
     scriptEl.textContent = result.text;
     document.head.appendChild(scriptEl);
-    console.info("[fetchAndDecrypt] Decrypted script injected successfully.");
   } catch (injectError) {
     console.error("[fetchAndDecrypt] Failed to inject decrypted script:", injectError);
   }
