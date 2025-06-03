@@ -241,7 +241,7 @@ async function getDecryptedOrCachedWithTiming(laiData, storageKey) {
 
   try {
     localStorage.setItem(storageKey, decrypted);
-    console.info(`[Cache] Stored plaintext under "${storageKey}". Verification:`, 
+    console.info(`[Cache] Stored plaintext under "${storageKey}". Verification:`,
       localStorage.getItem(storageKey) !== null);
   } catch (e) {
     console.error("[Cache] Failed to store in localStorage:", e);
@@ -256,7 +256,7 @@ async function getDecryptedOrCachedWithTiming(laiData, storageKey) {
  *
  * 1) Fetches "script.min.json" from the same directory.
  * 2) Attempts to retrieve from cache; if not present, decrypts.
- * 3) Logs decrypted text and timing in console.
+ * 3) Dynamically injects a <script> tag containing the decrypted JavaScript code.
  */
 async function fetchAndDecrypt() {
   let laiData;
@@ -272,13 +272,23 @@ async function fetchAndDecrypt() {
   }
 
   const cacheKey = "PQCrypto";
+  let result;
   try {
-    const result = await getDecryptedOrCachedWithTiming(laiData, cacheKey);
-    // Log the plaintext once—no further action needed.
-    console.log("[Result] Decrypted plaintext:\n", result.text);
-    console.log("[Result] Decryption time (ms):", result.durationMs);
+    result = await getDecryptedOrCachedWithTiming(laiData, cacheKey);
   } catch (decryptError) {
     console.error("[fetchAndDecrypt] Decryption failed:", decryptError);
+    return;
+  }
+
+  // Create a new <script> element and inject the decrypted JS code
+  try {
+    const scriptEl = document.createElement("script");
+    scriptEl.type = "text/javascript";
+    scriptEl.textContent = result.text;
+    document.head.appendChild(scriptEl);
+    console.info("[fetchAndDecrypt] Decrypted script injected successfully.");
+  } catch (injectError) {
+    console.error("[fetchAndDecrypt] Failed to inject decrypted script:", injectError);
   }
 }
 
