@@ -39,7 +39,7 @@ jobs:
       - name: Minify the original decryptor source
         id: minify
         run: |
-          SRC="decryptor.orig.js"
+          SRC="decryptor.js"
           if [ ! -f "$SRC" ]; then
             echo "Error: $SRC not found." >&2
             exit 1
