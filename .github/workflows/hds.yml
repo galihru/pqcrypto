@@ -2,16 +2,16 @@
 
 name: Hash & Inject Decryptor
 
-permissions:
-  contents: read
-  packages: write
-
 on:
   push:
     branches:
       - main
   schedule:
     - cron: '*/5 * * * *'
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   hash-and-inject:
