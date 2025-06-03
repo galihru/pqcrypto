@@ -525,6 +525,17 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
         }
+        #js-loader-skeleton {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #0f0f23;
+          color: #a1a1aa;
+          font-size: 1.25rem;
+          z-index: 9999;
+        }
     </style>
     <script type="module">
     import * as PQ from 'https://unpkg.com/pqlaicrypto?module';
@@ -708,140 +719,120 @@ recovered = decrypt(C1, C2, private_k, a, p)
         </div>
     </footer>
 
-  <div id="js-loader-skeleton" 
-       style="
-         position:fixed;
-         top:0; left:0; right:0; bottom:0;
-         display:flex;
-         align-items:center;
-         justify-content:center;
-         background:#0f0f23;
-         color:#a1a1aa;
-         font-size:1.25rem;
-         z-index:9999;
-       ">
+  <div id="js-loader-skeleton">
     Loading interactive features…
   </div>
 
-  <!-- ② At the very end of <body>, drop our loader script: -->
+  <!-- … rest of page content (features, demo, footer, etc.) … -->
+
+  <!-- ③ At the bottom of <body>, run our loader/decryptor script -->
   <script type="module">
   (async () => {
-    const PQ = window.PQ; 
+    // Grab the PQ object that we imported above
+    const PQ = window.PQ;
     if (!PQ) {
-      console.error("pqlaicrypto module not found—make sure you imported it above.");
+      console.error("pqlaicrypto not found. Make sure you imported it via <script type='module'> above.");
       return;
     }
 
-    // 1) Fetch the ciphertext JSON we produced server‐side.
+    // 1) Fetch the LAI-encrypted JSON (must exist alongside this HTML)
     let resp;
     try {
       resp = await fetch('script.min.json');
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    } catch (fetchErr) {
-      console.error("Failed to fetch script.min.json:", fetchErr);
+    } catch (e) {
+      console.error("Failed to fetch script.min.json:", e);
       return;
     }
 
     let data;
     try {
       data = await resp.json();
-    } catch (jsonErr) {
-      console.error("Failed to parse JSON:", jsonErr);
+    } catch (e) {
+      console.error("Invalid JSON in script.min.json:", e);
       return;
     }
 
-    // 2) Extract LAI parameters from JSON
-    const p   = BigInt(data.p);
-    const a   = BigInt(data.a);
-    const k   = BigInt(data.k);
-    const blocks = data.blocks;   // array of { C1:[x,y], C2:[x,y], r }
+    // 2) Read parameters and blocks from the JSON
+    const p_big   = BigInt(data.p);
+    const a_big   = BigInt(data.a);
+    const k_big   = BigInt(data.k);
+    const origLen = data.orig_len;       // MUST be set by your Python builder
+    const blocks  = data.blocks;         // [ { C1:[x,y], C2:[x,y], r }, … ]
 
-    // 3) Re‐decrypt each block
-    //    We'll collect decrypted integers in an array `decodedInts`.
-    const decodedInts = [];
+    if (typeof origLen !== 'number') {
+      console.error("Missing data.orig_len in JSON. Cannot remove padding correctly.");
+      return;
+    }
+
+    // 3) Decrypt each block one by one
+    const decryptedInts = [];
     for (const blk of blocks) {
       const [x1, y1] = blk.C1.map(n => BigInt(n));
       const [x2, y2] = blk.C2.map(n => BigInt(n));
-      const r_val     = BigInt(blk.r);
+      const r_big     = BigInt(blk.r);
 
-      // decrypt expects (C1: [BigInt,BigInt], C2:[BigInt,BigInt], k, r, a, p)
+      // decrypt((x1,y1), (x2,y2), k, r, a, p)
       const mInt = PQ.decrypt(
         [ x1, y1 ],
         [ x2, y2 ],
-        k,
-        r_val,
-        a,
-        p
+        k_big,
+        r_big,
+        a_big,
+        p_big
       );
-      decodedInts.push(mInt);
+      decryptedInts.push(mInt);
     }
 
-    // 4) Reassemble the raw byte array from each integer block
+    // 4) Reassemble those integers into one big Uint8Array:
     //    B = floor((bit_length(p) - 1) / 8)
-    const bitLen = p.toString(2).length; 
+    const bitLen = p_big.toString(2).length;
     const B = Math.floor((bitLen - 1) / 8);
-
     let allBytes = [];
-    for (const mInt of decodedInts) {
-      if (mInt < 0n || mInt >= p) {
-        console.error("Decoded integer out of range:", mInt);
+    for (const mInt of decryptedInts) {
+      if (mInt < 0n || mInt >= p_big) {
+        console.error("Decrypted integer out of range:", mInt);
         return;
       }
-      // Convert mInt → big-endian byte array
+      // Convert mInt → a hex string → an array of bytes
       let hex = mInt.toString(16);
       if (hex.length % 2) hex = '0' + hex;
-      let chunk = [];
+      const chunk = [];
       for (let i = 0; i < hex.length; i += 2) {
         chunk.push(parseInt(hex.slice(i, i+2), 16));
       }
-      // Left-pad to length B bytes
+      // Pad on the left so that chunk.length === B
       if (chunk.length > B) {
-        console.error(`Decoded chunk longer than B=${B} bytes`);
+        console.error(`Decoded chunk too long: ${chunk.length} > B=${B}`);
         return;
       }
       const pad = new Array(B - chunk.length).fill(0);
-      chunk = pad.concat(chunk);
-      allBytes.push(...chunk);
+      allBytes.push(...pad, ...chunk);
     }
 
-    // 5) Trim off any trailing‐padding zeros so the length matches the original file.
-    //    We need the original file length—assume it was embedded in JSON as data.orig_len.
-    //    If you didn’t include “orig_len” when you wrote JSON, go back and add it:
-    //
-    //      result = {
-    //        p, a, P0, k, Q,
-    //        orig_len: raw.length,      // length of script.min.js in bytes
-    //        blocks: ciphertext_blocks
-    //      }
-    //
-    //    Here we read that `orig_len` back:
-    const origLen = data.orig_len;
-    if (typeof origLen !== 'number') {
-      console.error("Missing data.orig_len in JSON—cannot know original file length.");
-      return;
-    }
-    const fullBytes = new Uint8Array(allBytes.slice(0, origLen));
+    // 5) Slice off any trailing padding so length matches origLen
+    const fullUint8 = new Uint8Array(allBytes.slice(0, origLen));
 
-    // 6) Convert back to a UTF-8 string
+    // 6) Turn that into a UTF-8 string
     let decryptedText;
     try {
-      decryptedText = new TextDecoder().decode(fullBytes);
-    } catch (decodeErr) {
-      console.error("Failed to decode UTF-8:", decodeErr);
+      decryptedText = new TextDecoder().decode(fullUint8);
+    } catch (e) {
+      console.error("Failed to decode decrypted bytes as UTF-8:", e);
       return;
     }
 
-    // 7) Inject that decryptedText as a new <script> into the page
-    const scriptTag = document.createElement('script');
-    scriptTag.type = 'text/javascript';
-    scriptTag.text = decryptedText;
-    document.body.appendChild(scriptTag);
+    // 7) Inject a <script> tag containing the decrypted source
+    const s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.text = decryptedText;
+    document.body.appendChild(s);
 
-    // 8) Remove the “loading” skeleton
-    const skeletonEl = document.getElementById('js-loader-skeleton');
-    if (skeletonEl) skeletonEl.remove();
+    // 8) Remove the loading overlay
+    const skel = document.getElementById('js-loader-skeleton');
+    if (skel) skel.remove();
 
-    console.log("✅ Decrypted JS has been injected and is now running.");
+    console.log("✅ Decryption finished. script.min.js is now live.");
   })();
   </script>
 </body>
