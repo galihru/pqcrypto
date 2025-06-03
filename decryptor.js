@@ -1,4 +1,4 @@
-// decryptor.js
+// decryptor_with_cache.js
 
 /**
  * Helper: convert ArrayBuffer → Hex string
@@ -180,7 +180,14 @@ async function decrypt_all_text_js(laiData) {
 
   let combined = new Uint8Array(0);
   for (const blk of blocks) {
-    const M_int = await decrypt_block_js(blk.C1, blk.C2, laiData.k, blk.r, laiData.a, laiData.p);
+    const M_int = await decrypt_block_js(
+      blk.C1,
+      blk.C2,
+      laiData.k,
+      blk.r,
+      laiData.a,
+      laiData.p
+    );
     const chunkBytes = intToBytes(M_int);
     const tmp = new Uint8Array(combined.length + chunkBytes.length);
     tmp.set(combined);
@@ -192,6 +199,41 @@ async function decrypt_all_text_js(laiData) {
   return decoder.decode(combined);
 }
 
-// ---------- Expose fungsi publik (misalnya untuk dipanggil index.html) ----------
-// Anda bisa mengakses decrypt_all_text_js(laiData) dari index.html
+// ---------- Caching ke localStorage ----------
+
+/**
+ * getDecryptedOrCached(laiData, storageKey)
+ *
+ * Ambil teks terdekripsi dari localStorage jika ada,
+ * jika belum, dekripsikan, simpan ke localStorage, lalu kembalikan.
+ *
+ * @param {Object} laiData – objek input untuk decrypt_all_text_js
+ * @param {string} storageKey – kunci di localStorage untuk menyimpan hasil dekripsi
+ * @returns {Promise<string>}
+ */
+async function getDecryptedOrCached(laiData, storageKey = "decryptedText") {
+  // Cek dulu di localStorage
+  const cached = localStorage.getItem(storageKey);
+  if (cached) {
+    console.log("Mengambil hasil dekripsi dari localStorage");
+    return cached;
+  }
+
+  // Kalau belum ada, panggil fungsi dekripsi
+  console.log("Belum ada di localStorage, memulai dekripsi...");
+  try {
+    const decrypted = await decrypt_all_text_js(laiData);
+    // Simpan ke localStorage (string)
+    localStorage.setItem(storageKey, decrypted);
+    console.log("Hasil dekripsi tersimpan di localStorage");
+    return decrypted;
+  } catch (err) {
+    console.error("Gagal dekripsi:", err);
+    throw err;
+  }
+}
+
+// ---------- Expose fungsi publik ----------
+// Anda bisa mengakses decrypt_all_text_js(laiData) atau getDecryptedOrCached(laiData, key) dari index.html
 window.decrypt_all_text_js = decrypt_all_text_js;
+window.getDecryptedOrCached = getDecryptedOrCached;
