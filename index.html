@@ -525,7 +525,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
         }
-        #js-loader-skeleton {
+        #loading-overlay {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
           display: flex;
@@ -714,34 +714,10 @@ recovered = decrypt(C1, C2, private_k, a, p)
             <p>&copy; 2024 PQCrypto. Licensed under MIT License.</p>
         </div>
     </footer>
+    <div id="loading-overlay">
+        Decrypting and loading interactive JS…
+    </div>
   
-   <script src="dc.js"></script>
-  <script>
-    window.addEventListener("load", async () => {
-      try {
-        const response = await fetch("script.min.json");
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status} saat fetch script.min.json`);
-        }
-        const laiData = await response.json();
-
-        console.log("=== Lai Data (dari script.min.json) ===");
-        console.log(laiData);
-
-        const decryptedJS = await decrypt_all_text_js(laiData);
-        console.log("=== Decrypted JS Code ===");
-        console.log(decryptedJS);
-
-        const scriptEl = document.createElement("script");
-        scriptEl.type = "application/javascript";
-        scriptEl.text = decryptedJS;
-        document.body.appendChild(scriptEl);
-
-        console.log("→ Decrypted JS telah disisipkan dan dijalankan.");
-      } catch (err) {
-        console.error("Gagal decrypt:", err);
-      }
-    });
-  </script>
+    <script type="module" src="dc.js"></script>
 </body>
 </html>
