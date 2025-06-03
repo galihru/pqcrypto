@@ -2,7 +2,7 @@ import math
 import json
 import os
 
-from laicrypto import keygen, encrypt
+from pqcrypto import keygen, encrypt
 
 p = 10007
 a = 5
