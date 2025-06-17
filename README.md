@@ -1,6 +1,6 @@
 # pqcrypto
 
-<img src="https://github.com/4211421036/pqcrypto/blob/main/logo.png" alt="pqcrypto Logo"/>
+<img src="https://4211421036.github.io/pqcrypto/logo.png" alt="pqcrypto Logo"/>
 
 <p align="center" style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.5em;">
   <a href="https://pypi.org/project/laicrypto/">
