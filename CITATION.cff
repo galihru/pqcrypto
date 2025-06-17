@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "pqcrypto: Post-Quantum Lemniscate-AGM Isogeny Encryption"
+authors:
+  - family-names: "Utomo"
+    given-names: "Galih Ridho"
+    orcid: "https://orcid.org/0000-0003-4254-2142"  # Ganti dengan ORCID Anda jika ada
+    affiliation: "UNNES"
+abstract: pqcrypto is a cross-platform implementation of the Lemniscate-AGM Isogeny (LAI) encryption scheme,
+  a post-quantum cryptosystem based on elliptic curve isogenies over lemniscate lattices. This package
+  supports multiple languages including Python, JavaScript, Ruby, C#, and Java. It is designed for
+  secure communication, research, and educational purposes.
+keywords:
+  - post-quantum
+  - cryptography
+  - isogeny
+  - elliptic curve
+  - LAI encryption
+  - multi-language
+  - JSON decryption
+  - Tonelli–Shanks
+license: "MIT"
+repository-code: "https://github.com/4211421036/pqcrypto/"  # Ganti dengan link GitHub Anda
+version: "0.1.0"
+date-released: "2025-06-17"
