@@ -8,14 +8,14 @@
 
   <groupId>com.pelajaran.pqcrypto</groupId>
   <artifactId>laicrypto</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <packaging>jar</packaging>
   <name>LAICrypto</name>
   <description>
     LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves 
     over lemniscate lattices, offering resistance against quantum-capable adversaries.
   </description>
-  <url>https://github.com/4211421036/pqcrypto</url>
+  <url>https://github.com/galihru/pqcrypto</url>
 
   <licenses>
     <license>
@@ -26,16 +26,16 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/4211421036/pqcrypto.git</connection>
-    <developerConnection>scm:git:ssh://github.com/4211421036/pqcrypto.git</developerConnection>
-    <url>https://github.com/4211421036/pqcrypto</url>
+    <connection>scm:git:git://github.com/galihru/pqcrypto.git</connection>
+    <developerConnection>scm:git:ssh://github.com/galihru/pqcrypto.git</developerConnection>
+    <url>https://github.com/galihru/pqcrypto</url>
   </scm>
 
   <developers>
     <developer>
       <id>your-github-username</id>
-      <name>Your Name</name>
-      <email>you@example.com</email>
+      <name>GALIH RIDHO UTOMO</name>
+      <email>g4lihru@students.unnes.ac.id</email>
     </developer>
   </developers>
 
@@ -61,7 +61,7 @@
     <repository>
       <id>github</id>
       <name>GitHub Packages</name>
-      <url>https://maven.pkg.github.com/4211421036/pqcrypto</url>
+      <url>https://maven.pkg.github.com/galihru/pqcrypto</url>
     </repository>
   </distributionManagement>
 
