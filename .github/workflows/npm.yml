@@ -17,26 +17,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # === Setup untuk publish ke npmjs.org ===
-      - name: Setup Node.js for npmjs
+      - name: Setup Node.js for npmjs.org
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@galihru'        # scope package-mu
-
+          scope: '@galihru'
+      
       - name: Install dependencies
         run: npm install
-
+      
       - name: Build package
         run: npm run
-
+      
       - name: Publish to npmjs.org
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  
-        run: npm publish --access public
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          rm -f ~/.npmrc
+          echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
+          npm publish --access public --registry https://registry.npmjs.org
 
-      # === Buat status deployment untuk npmjs.org (opsional) ===
       - name: Create deployment status
         uses: actions/github-script@v7
         with:
