@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
     LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curves over lemniscate lattices, offering resistance against quantum-capable adversaries.
   DESC
 
-  spec.homepage      = "https://github.com/4211421036/laicrypto"
+  spec.homepage      = "https://github.com/galihru/laicrypto"
   spec.license       = "MIT"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) {
@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
 
   # Supaya bundler/gem push tahu host yang diizinkan
   spec.metadata = {
-    "allowed_push_host" => "https://rubygems.pkg.github.com/4211421036"
+    "allowed_push_host" => "https://rubygems.pkg.github.com/galihru"
   }
 
   # Jika ada dependency lain: spec.add_runtime_dependency "something", "~> 1.0"
