@@ -30,7 +30,7 @@ jobs:
         run: npm install
 
       - name: Build package
-        run: npm run build
+        run: npm run
 
       - name: Publish to npmjs.org
         env:
