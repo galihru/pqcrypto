@@ -20,11 +20,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/galihridhoutomo/pqlaicrypto.git"
+    "url": "git+https://github.com/galihru/pqlaicrypto.git"
   },
-  "homepage": "https://github.com/galihridhoutomo/pqlaicrypto#readme",
+  "homepage": "https://github.com/galihru/pqlaicrypto#readme",
   "bugs": {
-    "url": "https://github.com/galihridhoutomo/pqlaicrypto/issues"
+    "url": "https://github.com/galihru/pqlaicrypto/issues"
   },
   "engines": {
     "node": ">=12"
