@@ -249,7 +249,7 @@ pip install laicrypto
 ### JavaScript (npm)
 
 ```bash
-npm install pqlaicrypto
+npm install @galihru/pqlaicrypto
 ```
 
 ### Ruby (RubyGems)
