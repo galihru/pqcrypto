@@ -4,14 +4,14 @@
     <TargetFramework>netstandard2.0</TargetFramework>
 
     <PackageId>PQCrypto.Lai</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>GALIH RIDHO UTOMO</Authors>
     <Company>UNNES</Company>
     <Description>Post-quantum Lemniscate-AGM Isogeny (LAI) Encryption Library for .NET</Description>
     <PackageTags>pqcrypto;post-quantum;encryption;lai;isogeny</PackageTags>
-    <RepositoryUrl>https://github.com/4211421036/PQCrypto.NET</RepositoryUrl>
+    <RepositoryUrl>https://github.com/galihru/PQCrypto.NET</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/4211421036/PQCrypto.NET</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/galihru/PQCrypto.NET</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <IncludeLicenseFile>true</IncludeLicenseFile>
     <LicenseFile>LICENSE</LicenseFile>
