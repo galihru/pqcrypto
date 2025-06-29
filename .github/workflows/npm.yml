@@ -3,7 +3,7 @@ name: Publish Package
 on:
   push:
     branches: 
-      -main
+      - main
 
 permissions:
   contents: read
@@ -30,18 +30,14 @@ jobs:
         run: npm install
 
       - name: Build package
-        run: npm run
-
-      - name: Bump Version (already done in package.json)
+        run: npm run build
 
       - name: Publish to npmjs.org
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # Reset .npmrc agar hanya ada auth untuk registry npmjs.org
-          rm -f ~/.npmrc
           echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
-          npm publish --access public --registry https://registry.npmjs.org
+          npm publish --access public
 
       - name: Create deployment status for npmjs
         uses: actions/github-script@v7
@@ -83,23 +79,16 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@galihru'
 
-      - name: Restore package.json (if backup exists)
-        run: |
-          if [ -f package.json.bak ]; then
-            mv package.json.bak package.json
-          fi
+      - name: Install dependencies
+        run: npm install
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Reset .npmrc & set auth only for GitHub Packages
-          rm -f ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
-          echo "@galihru:registry=https://npm.pkg.github.com" >> ~/.npmrc
+      - name: Build package
+        run: npm run build
 
       - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm publish --access public --registry https://npm.pkg.github.com
+          echo "//npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
+          echo "@galihru:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          npm publish
