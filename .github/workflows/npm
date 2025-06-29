@@ -34,7 +34,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          rm -f ~/.npmrc
           echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
           npm publish --access public --registry https://registry.npmjs.org
 
@@ -61,7 +60,6 @@ jobs:
               description: `Version ${require('./package.json').version} published to npmjs`
             });
 
-      # === Setup untuk publish ke GitHub Packages ===
       - name: Setup Node.js for GitHub Packages
         uses: actions/setup-node@v4
         with:
