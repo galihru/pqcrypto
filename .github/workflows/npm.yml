@@ -1,4 +1,3 @@
-
 name: Publish Package
 
 on:
@@ -18,70 +17,72 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (tanpa cache)
+      # === Setup untuk publish ke npmjs.org ===
+      - name: Setup Node.js for npmjs
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@galihru'        # scope package-mu
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build package
-        run: npm run
+        run: npm run build       # atau npm run sesuai script-mu
 
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "NPM_PACKAGE_URL=https://www.npmjs.com/package/@galihru/pqlaicrypto" >> $GITHUB_ENV
+      - name: Publish to npmjs.org
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  
+        run: npm publish --access public
 
-      - name: Publish to npmjs
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          npm publish --access public
-          
+      # === Buat status deployment untuk npmjs.org (opsional) ===
       - name: Create deployment status
         uses: actions/github-script@v7
         with:
           script: |
-            try {
-              const deployment = await github.rest.repos.createDeployment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: context.ref,
-                environment: 'npmjs',
-                description: `Published @galihru/pqlaicrypto@${process.env.PACKAGE_VERSION}`,
-                auto_merge: false,
-                required_contexts: []
-              });
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'npmjs',
+              description: `Published @galihru/pqlaicrypto@${require('./package.json').version}`,
+              auto_merge: false,
+              required_contexts: []
+            });
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'success',
+              environment_url: `https://www.npmjs.com/package/@galihru/pqlaicrypto`,
+              log_url: `https://www.npmjs.com/package/@galihru/pqlaicrypto`,
+              description: `Version ${require('./package.json').version} published to npmjs`
+            });
 
-              await github.rest.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: deployment.data.id,
-                state: 'success',
-                environment_url: process.env.NPM_PACKAGE_URL,
-                log_url: process.env.NPM_PACKAGE_URL,
-                description: `Version ${process.env.PACKAGE_VERSION} published to npmjs`
-              });
-            } catch (error) {
-              core.error('Deployment creation failed:');
-              core.error(error);
-              core.setFailed(error.message);
-            }
+      # === Setup untuk publish ke GitHub Packages ===
+      - name: Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@galihru'
+
+      - name: Authenticate to GitHub Packages
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+
+      - name: Adjust package.json for GitHub Packages
+        run: |
+          # backup
+          cp package.json package.json.bak
+          # ubah name & publishConfig
+          jq '.name = "@galihru/pqlaicrypto" 
+              | .publishConfig = { "registry": "https://npm.pkg.github.com" }' \
+              package.json > package.json.tmp
+          mv package.json.tmp package.json
 
       - name: Publish to GitHub Packages
-        run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-          echo "@galihru:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          
-          # Temporarily modify package.json
-          cp package.json package.json.bak
-          jq '.name = "@galihrupqlaicrypto" | .publishConfig = {"registry":"https://npm.pkg.github.com"}' package.json > package.json.tmp
-          mv package.json.tmp package.json
-          
-          npm publish --access public
-          
-          # Restore package.json
-          mv package.json.bak package.json
+        run: npm publish --access public
+
+      - name: Restore original package.json
+        run: mv package.json.bak package.json
