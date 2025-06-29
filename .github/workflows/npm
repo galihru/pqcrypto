@@ -78,7 +78,7 @@ jobs:
           
           # Temporarily modify package.json
           cp package.json package.json.bak
-          jq '.name = "pqlaicrypto" | .publishConfig = {"registry":"https://npm.pkg.github.com"}' package.json > package.json.tmp
+          jq '.name = "@galihrupqlaicrypto" | .publishConfig = {"registry":"https://npm.pkg.github.com"}' package.json > package.json.tmp
           mv package.json.tmp package.json
           
           npm publish --access public
