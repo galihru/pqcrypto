@@ -36,5 +36,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/4211421036/pqcrypto:${{ github.ref_name }}
-            ghcr.io/4211421036/pqcrypto:latest
+            ghcr.io/galihru/pqcrypto:${{ github.ref_name }}
+            ghcr.io/galihru/pqcrypto:latest
