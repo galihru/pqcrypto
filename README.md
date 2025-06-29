@@ -10,8 +10,8 @@
     <img src="https://img.shields.io/pypi/dm/laicrypto.svg" alt="PyPI downloads"/>
   </a>
 
-  <a href="https://www.npmjs.com/package/pqlaicrypto">
-    <img src="https://img.shields.io/npm/v/pqlaicrypto.svg" alt="npm version"/>
+  <a href="https://www.npmjs.com/package/@galihru/pqlaicrypto">
+    <img src="https://img.shields.io/npm/v/@galihru/pqlaicrypto.svg" alt="npm version"/>
   </a>
   <a href="https://www.npmjs.com/package/pqlaicrypto">
     <img src="https://img.shields.io/npm/dm/pqlaicrypto.svg" alt="npm downloads"/>
