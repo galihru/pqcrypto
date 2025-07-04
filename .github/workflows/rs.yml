@@ -1,0 +1,82 @@
+name: Release to crates.io & GitHub
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  build_publish_and_release:
+    runs-on: ubuntu-latest
+    environment: cratesio
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read crate metadata
+        id: metadata
+        run: |
+          VERSION=$(grep '^version ' Cargo.toml | head -1 | sed -E 's/version *= *"(.*)"/\1/')
+          CRATE_NAME=$(grep '^name ' Cargo.toml | head -1 | sed -E 's/name *= *"(.*)"/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "CRATE_NAME=$CRATE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Start crates.io Deployment
+        id: create_deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const dep = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'cratesio',
+              auto_merge: false,
+              required_contexts: [],
+              transient_environment: true,
+            });
+            return dep.data.id;
+          result-encoding: string
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Cache Cargo git index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --quiet
+
+      - name: Update Deployment Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.create_deployment.outputs.result }}'),
+              state: 'success',
+              environment_url: `https://crates.io/crates/${{ steps.metadata.outputs.CRATE_NAME }}/`,
+              description: `Published ${{ steps.metadata.outputs.CRATE_NAME }} v${{ steps.metadata.outputs.VERSION }} to crates.io`
+            });
