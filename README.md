@@ -289,7 +289,6 @@ cargo add laicrypto
 Build:
 
 ```bash
-Copy code
 cargo build
 ```
 
@@ -509,31 +508,24 @@ String plaintext = new String(plaintextBytes, StandardCharsets.UTF_8);
 ### Rust
 
 ```rust
-use laicrypto::{keygen, encrypt, decrypt};
+use laicrypto::LaiCryptoEngine;
 
 fn main() {
-    // 1. Parameter selection
-    let p: u128 = 10007;
-    let a: u128 = 5;
-    let p0 = (1u128, 0u128);
+    let mut engine = LaiCryptoEngine::new(751, 1, (0, 1));
+    let m = 123;
 
-    // 2. Key generation
-    let (k, q) = keygen(p, a, p0);
-    println!("Private key k = {}", k);
-    println!("Public  Q = ({}, {})", q.0, q.1);
+    let (k, q) = engine.keygen().expect("Gagal keygen");
+    println!("Private key = {}", k);
+    println!("Public key  = ({}, {})", q.0, q.1);
 
-    // 3. Encryption
-    let m: u128 = 2024;
-    let (c1, c2, r) = encrypt(m, q, k, p, a, p0);
-    println!(
-        "Ciphertext: C1=({}, {}), C2=({}, {}), r={}", 
-        c1.0, c1.1, c2.0, c2.1, r
-    );
+    let (c1, c2, r) = engine.encrypt(m, q, k).expect("Encrypt gagal");
+    println!("Ciphertext: C1=({},{}) C2=({},{}) r={}", c1.0, c1.1, c2.0, c2.1, r);
 
-    // 4. Decryption
-    let recovered = decrypt(c1, c2, k, r, a, p);
+    let recovered = engine.decrypt(c1, c2, k).expect("Decrypt gagal");
     println!("Recovered plaintext = {}", recovered);
+
     assert_eq!(recovered, m);
+    engine.print_trace();
 }
 ```
 
