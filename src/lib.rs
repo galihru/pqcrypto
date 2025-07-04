@@ -667,50 +667,65 @@ impl LaiCryptoEngine {
 
 /// Miller-Rabin primality test for u128
 fn is_prime(n: u128) -> bool {
-    if n == 2 || n == 3 {
-        return true;
-    }
-    if n <= 1 || n % 2 == 0 {
-        return false;
-    }
+     // Handle small primes
+     match n {
+         2 | 3 => return true,
+         _ if n <= 1 || n % 2 == 0 => return false,
+         _ => {}
+     }
 
-    let mut d = n - 1;
-    let mut s = 0;
-    while d % 2 == 0 {
-        d /= 2;
-        s += 1;
-    }
+     let mut d = n - 1;
+     let mut s = 0;
+     while d % 2 == 0 {
+         d /= 2;
+         s += 1;
+     }
 
-    // Bases for 128-bit numbers (deterministic for n < 2^64)
-    let bases: &[u128] = match n {
-        _ if n < 2_047 => &[2],
-        _ if n < 1_373_653 => &[2, 3],
-        _ if n < 9_080_191 => &[31, 73],
-        _ if n < 25_326_001 => &[2, 3, 5],
-        _ if n < 3_215_031_751 => &[2, 3, 5, 7],
-        _ if n < 4_759_123_141 => &[2, 7, 61],
-        _ => &[2, 325, 9_375, 28_178, 450_775, 9_780_504, 1_795_265_022],
-    };
+     // Extended bases for 128-bit numbers
+     let bases: &[u128] = if n < 2_047 {
+         &[2]
+     } else if n < 1_373_653 {
+         &[2, 3]
+     } else if n < 9_080_191 {
+         &[31, 73]
+     } else if n < 25_326_001 {
+         &[2, 3, 5]
+     } else if n < 3_215_031_751 {
+         &[2, 3, 5, 7]
+     } else if n < 4_759_123_141 {
+         &[2, 7, 61]
+     } else if n < 1_122_004_669_633 {
+         &[2, 13, 23, 1_662_803]
+     } else if n < 2_152_302_898_747 {
+         &[2, 3, 5, 7, 11]
+     } else if n < 3_474_749_660_383 {
+         &[2, 3, 5, 7, 11, 13]
+     } else if n < 341_550_071_728_321 {
+         &[2, 3, 5, 7, 11, 13, 17]
+     } else {
+         // Deterministic for 2^64 and larger
+         &[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+     };
 
-    'base_loop: for &a in bases.iter() {
-        if a >= n {
-            continue;
-        }
-
-        let mut x = mod_exp(a, d, n);
-        if x == 1 || x == n - 1 {
-            continue;
-        }
-
-        for _ in 1..s {
-            x = mod_exp(x, 2, n);
-            if x == n - 1 {
-                continue 'base_loop;
-            }
-        }
-        return false;
-    }
-    true
+     'base_loop: for &a in bases {
+         if a >= n {
+             continue;
+         }
+         
+         let mut x = mod_exp(a, d, n);
+         if x == 1 || x == n - 1 {
+             continue;
+         }
+         
+         for _ in 1..s {
+             x = mod_exp(x, 2, n);
+             if x == n - 1 {
+                 continue 'base_loop;
+             }
+         }
+         return false;
+     }
+     true
 }
 
 /// Modular exponentiation helper
