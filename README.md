@@ -277,7 +277,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-laicrypto = "0.1"
+laicrypto = "0.1.4"
 ```
 Or via Cargo CLI:
 
@@ -508,25 +508,29 @@ String plaintext = new String(plaintextBytes, StandardCharsets.UTF_8);
 ### Rust
 
 ```rust
-use laicrypto::LaiCryptoEngine;
+// Initialize engine with prime modulus
+let prime = 340_282_366_920_938_463_463_374_607_431_768_211_297; // 2^128 - 159
+let mut engine = LaiCryptoEngine::new(prime, 10, (5, 10))?;
 
-fn main() {
-    let mut engine = LaiCryptoEngine::new(751, 1, (0, 1));
-    let m = 123;
+// Generate keys
+let (priv_key, pub_key) = engine.keygen()?;
 
-    let (k, q) = engine.keygen().expect("Gagal keygen");
-    println!("Private key = {}", k);
-    println!("Public key  = ({}, {})", q.0, q.1);
+// Encrypt message
+let message = 12345;
+let (c1, c2, r) = engine.encrypt(message, pub_key, priv_key)?;
 
-    let (c1, c2, r) = engine.encrypt(m, q, k).expect("Encrypt gagal");
-    println!("Ciphertext: C1=({},{}) C2=({},{}) r={}", c1.0, c1.1, c2.0, c2.1, r);
+// Decrypt message
+let decrypted = engine.decrypt(c1, c2, priv_key)?;
 
-    let recovered = engine.decrypt(c1, c2, k).expect("Decrypt gagal");
-    println!("Recovered plaintext = {}", recovered);
+// Generate performance graphs
+let timeline_graph = engine.generate_perf_graph(GraphStyle::Line);
+println!("{}", timeline_graph.render_ascii(80, 24)?);
 
-    assert_eq!(recovered, m);
-    engine.print_trace();
-}
+let complexity_graph = engine.generate_complexity_graph();
+println!("{}", complexity_graph.render_ascii(60, 20)?);
+
+// Print detailed trace
+engine.print_trace();
 ```
 
 ---
