@@ -14,7 +14,7 @@
 //! - Complete operational history tracking
 
 use rand::{rngs::OsRng, RngCore};
-use sha2::{Digest, Sha256, Sha512};
+use sha2::{Digest, Sha512};
 use std::{
     collections::HashMap,
     fmt,
@@ -527,9 +527,9 @@ impl LaiCryptoEngine {
                     self.record_operation("keygen", duration);
                     return Ok((k, q));
                 }
-                Err(e) => {
+                Err(_e) => {
                     if attempt == self.max_attempts - 1 {
-                        let duration = start.elapsed();
+                        let _duration = start.elapsed();
                         return Err(LaiCryptoError::KeygenFailed {
                             attempts: self.max_attempts,
                             modulus: self.p,
@@ -549,7 +549,6 @@ impl LaiCryptoEngine {
         &mut self,
         m: u128,
         q: (u128, u128),
-        k: u128,
     ) -> Result<((u128, u128), (u128, u128), u128), LaiCryptoError> {
         let start = Instant::now();
         let mut buf = [0u8; 16];
@@ -683,18 +682,17 @@ fn is_prime(n: u128) -> bool {
     }
 
     // Bases for 128-bit numbers (deterministic for n < 2^64)
-    let bases = match n {
-        _ if n < 2_047 => [2],
-        _ if n < 1_373_653 => [2, 3],
-        _ if n < 9_080_191 => [31, 73],
-        _ if n < 25_326_001 => [2, 3, 5],
-        _ if n < 3_215_031_751 => [2, 3, 5, 7],
-        _ if n < 4_759_123_141 => [2, 7, 61],
-        _ => [2, 325, 9_375, 28_178, 450_775, 9_780_504, 1_795_265_022],
+    let bases: &[u128] = match n {
+        _ if n < 2_047 => &[2],
+        _ if n < 1_373_653 => &[2, 3],
+        _ if n < 9_080_191 => &[31, 73],
+        _ if n < 25_326_001 => &[2, 3, 5],
+        _ if n < 3_215_031_751 => &[2, 3, 5, 7],
+        _ if n < 4_759_123_141 => &[2, 7, 61],
+        _ => &[2, 325, 9_375, 28_178, 450_775, 9_780_504, 1_795_265_022],
     };
 
-    'base_loop: for a in bases.iter() {
-        let a = *a as u128;
+    'base_loop: for &a in bases.iter() {
         if a >= n {
             continue;
         }
@@ -770,7 +768,7 @@ mod tests {
         let mut engine = LaiCryptoEngine::new(prime, 10, (5, 10)).unwrap();
         let (priv_key, pub_key) = engine.keygen().unwrap();
         let message = 12345;
-        let enc_result = engine.encrypt(message, pub_key, priv_key);
+        let enc_result = engine.encrypt(message, pub_key);
         assert!(enc_result.is_ok());
     }
 
