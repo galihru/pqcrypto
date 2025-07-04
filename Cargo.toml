@@ -1,0 +1,18 @@
+[package]
+name = "laicrypto"
+version = "0.1.0"
+authors = ["Galih Ridho Utomo <g4lihru@students.unnes.ac.id>"]
+edition = "2021"
+license = "MIT"
+license-file = "LICENSE"
+description = "Lemniscate-AGM Isogeny (LAI) Encryption – quantum‑resistant cryptography"
+homepage = "https://github.com/galihru/pqcrypto"
+repository = "https://github.com/galihru/pqcrypto"
+documentation = "https://docs.rs/laicrypto"
+readme = "README.md"
+keywords = ["crypto", "isogeny", "quantum-resistant", "lai", "encryption"]
+categories = ["cryptography", "asymmetric-cryptography"]
+
+[dependencies]
+rand = "0.8"
+sha2 = "0.10"
