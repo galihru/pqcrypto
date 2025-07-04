@@ -30,6 +30,12 @@
   <a href="https://www.nuget.org/packages/PQCrypto.Lai/">
     <img src="https://img.shields.io/nuget/dt/PQCrypto.Lai.svg" alt="NuGet downloads"/>
   </a>
+  <a href="https://crates.io/crates/laicrypto">
+    <img src="https://img.shields.io/crates/v/laicrypto.svg" alt="crates.io version"/>
+  </a>
+  <a href="https://docs.rs/laicrypto/latest/laicrypto/">
+    <img src="https://docs.rs/laicrypto/badge.svg" alt="docs.rs"/>
+  </a>
 
 </p>
 
@@ -51,15 +57,17 @@ LAI is a promising post-quantum cryptosystem based on isogenies of elliptic curv
    4.3. [Ruby (RubyGems)](#ruby-rubygems)  
    4.4. [.NET (NuGet)](#net-nuget)  
    4.5. [Java (Maven)](#java)  
+   4.6. [Rust (crates.io)](#rust)
 5. [Usage Examples](#usage-examples)  
    5.1. [Python](#python)  
    5.2. [JavaScript](#javascripts)  
    5.3. [Ruby](#ruby)  
    5.4. [.NET (C#)](#net-c)  
    5.5. [Java](#java)  
-6. [API Reference](#api-reference)  
-7. [Testing](#testing)  
-8. [Contributing & Development](#contributing--development)  
+   5.6. [Rust](#rust)
+6. [API Reference](#api-reference)
+7. [Testing](#testing)
+8. [Contributing & Development](#contributing--development)
 9. [License](#license)
 
 ---
@@ -263,6 +271,32 @@ gem install laicrypto
 ```xml
 <PackageReference Include="PQCrypto.Lai" Version="0.1.0" />
 ```
+
+### Rust
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+laicrypto = "0.1"
+```
+Or via Cargo CLI:
+
+bash
+
+```bash
+cargo add laicrypto
+```
+Build:
+
+```bash
+Copy code
+cargo build
+```
+
+- Crates.io: https://crates.io/crates/laicrypto
+
+- Documentation: https://docs.rs/laicrypto
+
 
 ### Java (Maven Central / GitHub Packages)
 
@@ -470,6 +504,37 @@ ObjectMapper mapper = new ObjectMapper();
 JsonNode root = mapper.readTree(new File("ciphertext.json"));
 byte[] plaintextBytes = LaiCrypto.decryptAll(root);
 String plaintext = new String(plaintextBytes, StandardCharsets.UTF_8);
+```
+
+### Rust
+
+```rust
+use laicrypto::{keygen, encrypt, decrypt};
+
+fn main() {
+    // 1. Parameter selection
+    let p: u128 = 10007;
+    let a: u128 = 5;
+    let p0 = (1u128, 0u128);
+
+    // 2. Key generation
+    let (k, q) = keygen(p, a, p0);
+    println!("Private key k = {}", k);
+    println!("Public  Q = ({}, {})", q.0, q.1);
+
+    // 3. Encryption
+    let m: u128 = 2024;
+    let (c1, c2, r) = encrypt(m, q, k, p, a, p0);
+    println!(
+        "Ciphertext: C1=({}, {}), C2=({}, {}), r={}", 
+        c1.0, c1.1, c2.0, c2.1, r
+    );
+
+    // 4. Decryption
+    let recovered = decrypt(c1, c2, k, r, a, p);
+    println!("Recovered plaintext = {}", recovered);
+    assert_eq!(recovered, m);
+}
 ```
 
 ---
