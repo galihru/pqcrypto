@@ -1,4 +1,4 @@
-name: Publish & Create Deployment
+name: Publish & Create Deployment Rust
 
 on:
   push:
@@ -6,8 +6,13 @@ on:
       - main
 
 jobs:
-  publish-and-deploy:
+  publish:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      deployments: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,20 +40,19 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish --quiet
 
-      - name: Create GitHub Deployment
-        id: create_deploy
-        uses: actions/create-deployment@v1
+      - name: Start deployment announcement
+        id: depl
+        uses: bobheadxi/deployments@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          environment: crates.io
-          transient_environment: false
-          production_environment: true
-          description: 'Published version ${{ github.ref_name }} to crates.io'
+          step: start
+          env: crates
 
-      - name: Set Deployment Status
-        uses: actions/deployment-status@v1
+      - name: Finish deployment announcement
+        if: always()
+        uses: bobheadxi/deployments@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          deployment_id: ${{ steps.create_deploy.outputs.deployment_id }}
-          state: success
-          environment_url: https://crates.io/crates/laicrypto
+          step: finish
+          status: ${{ job.status }}
+          env: ${{ steps.depl.outputs.env }}
+          deployment_id: ${{ steps.depl.outputs.deployment_id }}
+          env_url: https://crates.io/crates/laicrypto
