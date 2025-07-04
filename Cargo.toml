@@ -11,7 +11,7 @@ repository = "https://github.com/galihru/pqcrypto"
 documentation = "https://docs.rs/laicrypto"
 readme = "README.md"
 keywords = ["crypto", "isogeny", "quantum-resistant", "lai", "encryption"]
-categories = ["cryptography", "asymmetric-cryptography"]
+categories = ["cryptography"]
 
 [dependencies]
 rand = "0.8"
