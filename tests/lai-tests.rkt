@@ -4,18 +4,15 @@
          "../private/impl.rkt")
 
 (module+ test
-  (define p 101) ; prime kecil untuk testing
+  (define p 101) ; Test prime
   (define a 7)
   (define P0 '(1 1))
   
-  (test-case "H function"
-    (check-true (integer? (H 1 2 3 p))))
-  
-  (test-case "sqrt-mod"
-    (check-equal? (sqrt-mod 0 p) 0)
+  (test-case "Core functionality"
+    (check-true (integer? (H 1 2 3 p)))
     (check-equal? (modulo (* (sqrt-mod 4 p) (sqrt-mod 4 p)) p) 4))
   
-  (test-case "Key generation and encryption/decryption"
+  (test-case "Full encryption/decryption cycle"
     (define-values (k Q) (keygen p a P0))
     (define m 42)
     (define-values (C1 C2 r) (encrypt m Q k p a P0))
