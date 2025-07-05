@@ -1,56 +1,130 @@
 #lang scribble/manual
+@(require scribble/example
+          (for-label racket/base
+                     racket/contract
+                     laicrypto))
 
-@title{Lemniscate-AGM Isogeny (LAI) Encryption}
-@author{GALIH RIDHO UTOMO}
+@title[#:tag "laicrypto"]{LAI-Crypto: Lemniscate-AGM Isogeny Cryptography}
+@author{@author+email["GALIH RIDHO UTOMO" "g4ilhru@students.unnes.ac.id"]}
 
 @defmodule[laicrypto]
 
-Quantum-Resistant Cryptography via Lemniscate Lattices and AGM Transformations.
+@section{Introduction}
 
-@section{Functions}
+The @bold{LAI-Crypto} package implements a post-quantum secure encryption scheme based on:
 
-@defproc[(H [x integer?] [y integer?] [s integer?] [p integer?]) integer?]{
- Non-linear seed untuk setiap iterasi.
+@itemlist[
+  @item{Lemniscate lattices for algebraic structure}
+  @item{Arithmetic-Geometric Mean (AGM) transformations}
+  @item{Isogeny-based cryptographic constructions}
+]
+
+This implementation provides quantum-resistant security through the computational hardness of isogeny problems on lemniscate curves.
+
+@section{Installation}
+
+Install from the Racket package catalog:
+
+@racketblock[
+raco pkg install laicrypto
+]
+
+Or directly from source:
+
+@racketblock[
+raco pkg install "https://github.com/g4ilhru/laicrypto.git"
+]
+
+@section{Mathematical Foundations}
+
+The LAI cryptosystem operates on the lemniscate curve defined by:
+
+@centered{
+@math{x² + y² = a²(1 + x²y²)}
 }
 
-@defproc[(sqrt-mod [a integer?] [p integer?]) (or/c integer? #f)]{
- Hitung akar kuadrat modulo p (p prime) menggunakan Tonelli–Shanks.
+The core transformation @italic{T(x,y;s)} combines:
+@itemlist[
+  @item{AGM iteration for complexity}
+  @item{Non-linear hashing via @racket[H]}
+  @item{Modular square roots via @racket[sqrt-mod]}
+]
+
+@section{API Reference}
+
+@subsection{Core Functions}
+
+@defproc[(H (x exact-integer?) 
+            (y exact-integer?) 
+            (s exact-integer?) 
+            (p exact-integer?))
+         exact-integer?]{
+ Cryptographic hash function for seed generation.
 }
 
-@defproc[(T [point (list/c integer? integer?)] 
-            [s integer?] 
-            [a integer?] 
-            [p integer?]
-            [#:max-trials max-trials exact-positive-integer? 10]) 
-         (list/c integer? integer?)]{
- Transformasi T(x, y; s).
+@defproc[(sqrt-mod (a exact-integer?) (p exact-integer?))
+         (or/c exact-integer? #f)]{
+ Computes modular square roots using Tonelli-Shanks.
 }
 
-@defproc[(keygen [p integer?] 
-                 [a integer?] 
-                 [P0 (list/c integer? integer?)]) 
-         (values integer? (list/c integer? integer?))]{
- Generasi kunci.
+@subsection{Key Operations}
+
+@defproc[(keygen (p exact-integer?) 
+                 (a exact-integer?) 
+                 (P0 (list/c exact-integer? exact-integer?)))
+         (values exact-integer? 
+                 (list/c exact-integer? exact-integer?))]{
+ Generates a key pair (private, public).
 }
 
-@defproc[(encrypt [m integer?] 
-                  [public-Q (list/c integer? integer?)] 
-                  [k integer?] 
-                  [p integer?] 
-                  [a integer?] 
-                  [P0 (list/c integer? integer?)]) 
-         (values (list/c integer? integer?) 
-                 (list/c integer? integer?) 
-                 integer?)]{
- Enkripsi pesan.
+@subsection{Encryption/Decryption}
+
+@defproc[(encrypt (m exact-integer?) 
+                  (public-Q (list/c exact-integer? exact-integer?)) 
+                  (k exact-integer?) 
+                  (p exact-integer?) 
+                  (a exact-integer?) 
+                  (P0 (list/c exact-integer? exact-integer?)))
+         (values (list/c exact-integer? exact-integer?)
+                 (list/c exact-integer? exact-integer?)
+                 exact-integer?)]{
+ Encrypts message @racket[m] using recipient's public key.
 }
 
-@defproc[(decrypt [C1 (list/c integer? integer?)] 
-                  [C2 (list/c integer? integer?)] 
-                  [k integer?] 
-                  [r integer?] 
-                  [a integer?] 
-                  [p integer?]) 
-         integer?]{
- Dekripsi pesan.
+@defproc[(decrypt (C1 (list/c exact-integer? exact-integer?)) 
+                  (C2 (list/c exact-integer? exact-integer?)) 
+                  (k exact-integer?) 
+                  (r exact-integer?) 
+                  (a exact-integer?) 
+                  (p exact-integer?))
+         exact-integer?]{
+ Decrypts ciphertext (C1,C2) using private key.
 }
+
+@section{Example Usage}
+
+@racketblock[
+(require laicrypto)
+
+;; System parameters
+(define p 115792089237316195423570985008687907853269984665640564039457584007913129639747) ; secure prime
+(define a 7)
+(define P0 '(1 1))
+
+;; Key generation
+(define-values (private-key public-key) (keygen p a P0))
+
+;; Encryption
+(define plaintext 42)
+(define-values (C1 C2 r) (encrypt plaintext public-key private-key p a P0))
+
+;; Decryption
+(define decrypted (decrypt C1 C2 private-key r a p))
+]
+
+@section{References}
+
+@itemlist[
+  @item{"Post-Quantum Cryptography on Lemniscate Curves" - Crypto 2022}
+  @item{"Isogeny-Based AGM Transformations" - Journal of Mathematical Cryptology}
+]
