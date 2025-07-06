@@ -144,6 +144,7 @@
       (define Q (iterated-T P0 1 k a p))
       (values k Q))))
 
+;; PERBAIKAN DI SINI: Kesalahan sintaks pada definisi C2
 (define (encrypt m public-Q k p a P0)
   "LAI Encryption function
    Parameters:
@@ -160,8 +161,12 @@
       (define C1 (iterated-T P0 1 r a p))
       (define Sr (iterated-T public-Q (+ k 1) r a p))
       (define M (list (modulo m p) 0))
-      (define C2 (list (modulo (+ (first M) (first Sr)) p)
-                       (modulo (+ (second M) (second Sr)) p))
+      
+      ;; PERBAIKAN: Sintaks yang benar untuk membuat list C2
+      (define C2 (list 
+                  (modulo (+ (first M) (first Sr)) p)
+                  (modulo (+ (second M) (second Sr)) p)))
+      
       (values C1 C2 r))))
 
 (define (decrypt C1 C2 k r a p)
